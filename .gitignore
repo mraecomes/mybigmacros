@@ -1,0 +1,35 @@
+# Environment
+.env.local
+.env.*.local
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Dependencies
+node_modules/
+
+# Native build artifacts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+*.hbc
+android/
+ios/
+
+# System files
+.DS_Store
+*.pem
+
+# EAS
+.easignore
+
+# Data files (local only — never commit)
+ms_annual_data_2022.xls
+
+# Claude Code internal config
+.claude/
