@@ -33,3 +33,6 @@ ms_annual_data_2022.xls
 
 # Claude Code internal config
 .claude/
+
+# Local planning and brainstorm files
+cheat_meal_app_brainstorm.md
