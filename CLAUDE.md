@@ -672,7 +672,37 @@ Vercel MCP lets Claude Code interact with your Vercel deployment directly. Use i
 - Confirm the production URL is live and reflecting the latest changes
 - Manage environment variables in the Vercel dashboard without opening a browser
 
+**Transport:** HTTP via `https://mcp.vercel.com` — uses OAuth authentication. No personal token required. After adding the server, open Claude Code and run `/mcp` to complete the OAuth flow in the browser.
+
 **Rule:** After every merge to main, use Vercel MCP to confirm the deployment succeeded before closing the session.
+
+---
+
+### MCP Setup Per Project
+
+MCP servers are configured per project, not globally. Setup must be run from inside the project folder. Run these commands once when starting any new project:
+
+```bash
+# Navigate to the project folder first
+cd /path/to/project
+
+# Add each MCP server
+claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
+claude mcp add github -- npx -y @modelcontextprotocol/server-github
+claude mcp add supabase -- npx -y @supabase/mcp-server-supabase@latest --access-token YOUR_TOKEN
+claude mcp add --transport http vercel https://mcp.vercel.com
+```
+
+**Verify all four registered correctly:**
+```bash
+cat ~/.claude.json
+```
+
+**After adding Vercel:** Open Claude Code and run `/mcp` to complete the OAuth flow in the browser. This is required before the Vercel MCP tools become available.
+
+**Supabase access token for this project:** Already stored in `.env.local` and `~/.claude.json` — no action needed.
+
+**Plugins** (e.g. Google Drive) are global and require no setup per project.
 
 ---
 
