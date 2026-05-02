@@ -1,0 +1,16 @@
+export const colors = {
+  primary: '#C41E3A',
+  secondary: '#2AF5FF',
+  accent: '#FFC107',
+  background: '#121212',
+  surface: '#1E1E1E',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#A0A0A0',
+  badgeProtein: '#FFC107',
+  badgeFiber: '#6B8F71',
+  success: '#4CAF50',
+  error: '#DC2626',
+  warning: '#EA580C',
+  border: '#2A2A2A',
+  overlay: 'rgba(0,0,0,0.6)',
+} as const;
