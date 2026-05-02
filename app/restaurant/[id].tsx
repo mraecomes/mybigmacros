@@ -1,0 +1,13 @@
+import { Text, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { colors } from '@/constants/theme';
+
+export default function RestaurantScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+      <Text style={{ color: colors.textPrimary, fontSize: 18 }}>Restaurant {id}</Text>
+    </View>
+  );
+}
