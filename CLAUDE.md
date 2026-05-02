@@ -681,13 +681,13 @@ Vercel MCP lets Claude Code interact with your Vercel deployment directly. Use i
 These are things only you can do. Complete all of them before asking Claude Code to start work.
 
 **Required before first session:**
-- [ ] Download the MenuStat 2022 XLS file (ms_annual_data_2022.xls) from [menustat.org/data.html](https://www.menustat.org/data.html) and save it somewhere accessible on your Mac
-- [ ] Create a Supabase project at supabase.com. Collect three values from Settings → API and paste into `.env.local`: project URL, anon key, and service role key
-- [ ] Create a Mapbox account at mapbox.com. Copy your default public access token into `.env.local`
-- [ ] Create an empty GitHub repo named `mybigmacros` (or your chosen name). Do not initialize with a README — Claude Code handles the first commit
-- [ ] Create a Vercel project at vercel.com connected to your GitHub account. Decide on your project name — this becomes your public URL (`[name].vercel.app`)
-- [ ] Confirm Node.js is installed on your Mac by running `node --version` in terminal. You need v18 or higher. If missing, install via [nodejs.org](https://nodejs.org)
-- [ ] Confirm pnpm is installed by running `pnpm --version` in terminal. If missing: `npm install -g pnpm`
+- ✅ Download the MenuStat 2022 XLS file (ms_annual_data_2022.xls) from [menustat.org/data.html](https://www.menustat.org/data.html) and save it somewhere accessible on your Mac
+- ✅ Create a Supabase project at supabase.com. Collect three values from Settings → API and paste into `.env.local`: project URL, anon key, and service role key
+- ✅ Create a Mapbox account at mapbox.com. Copy your default public access token into `.env.local`
+- ✅ Create an empty GitHub repo named `mybigmacros` (or your chosen name). Do not initialize with a README — Claude Code handles the first commit
+- ⚠️ Create a Vercel project at vercel.com connected to your GitHub account. Decide on your project name — this becomes your public URL (`[name].vercel.app`) — GitHub app installed and authorized — full project-to-repo connection completes in Issue #1
+- ✅ Confirm Node.js is installed on your Mac by running `node --version` in terminal. You need v18 or higher. If missing, install via [nodejs.org](https://nodejs.org) (v25.9.0 confirmed)
+- ✅ Confirm pnpm is installed by running `pnpm --version` in terminal. If missing: `npm install -g pnpm` (v10.33.0 confirmed)
 
 **Deferred — not needed until later:**
 - EAS CLI — only needed when building TestFlight/APK binaries. Install when ready: `pnpm add -g eas-cli`
