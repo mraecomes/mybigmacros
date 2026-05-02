@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** Pre-Build — Planning Complete
-**Last Updated:** April 30 2026
-**Last Session:** Session 1 complete — GitHub repo created, 12 issues created, pre-session checklist completed, git initialized, planning docs committed to main
-**Next Session Goal:** Begin Issue #1 — Project Setup (Expo + TypeScript + NativeWind + Supabase + Vercel)
+**Build Phase:** Pre-Build — Issue #1 Complete
+**Last Updated:** May 2 2026
+**Last Session:** Session 2 complete — Issue #1 done: Expo SDK 54 project initialized, NativeWind v4 + TanStack Query v5 configured, full route structure built, Vercel live at mybigmacros.vercel.app
+**Next Session Goal:** Issue #2 — Mapbox compatibility check (Expo managed workflow + web rendering)
 
 ---
 
@@ -32,8 +32,8 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | CLAUDE.md created | ✅ Complete | |
-| Project setup (Expo + TypeScript + NativeWind + Supabase) | ⬜ Not started | |
-| Centralized theme.ts (Electric Diner palette) | ⬜ Not started | Build before any UI components |
+| Project setup (Expo + TypeScript + NativeWind + Supabase) | ✅ Complete | |
+| Centralized theme.ts (Electric Diner palette) | ✅ Complete | Colors defined in constants/theme.ts; typography + spacing tokens in Issue #5 |
 | Authentication — sign up | ⬜ Not started | |
 | Authentication — login / logout | ⬜ Not started | |
 | Authentication — password reset | ⬜ Not started | |
@@ -59,7 +59,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | "Using cached data" banner | ⬜ Not started | |
 | Core loop validated on Expo Go (mobile) | ⬜ Not started | |
 | Core loop validated on Expo web (browser) | ⬜ Not started | |
-| Vercel deploy — live portfolio URL | ⬜ Not started | Deploy as soon as core loop works on web |
+| Vercel deploy — live portfolio URL | ✅ Complete | mybigmacros.vercel.app — auto-deploys from main |
 | Data persistence (Supabase) | ⬜ Not started | |
 
 **Legend:** ⬜ Not started · 🔄 In progress · ✅ Complete · 🚫 Blocked
@@ -117,8 +117,8 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 - ✅ Supabase project URL and keys confirmed in `.env.local`
 - ✅ Mapbox access token confirmed in `.env.local`
-- Decide on Vercel project name before first deploy — becomes the public portfolio URL
-- Decide on final app display name (used in Expo config `app.json`)
+- ✅ Vercel project name decided and live — mybigmacros.vercel.app
+- ✅ App display name decided — myBigMACros (set in app.config.ts)
 - ✅ Node.js confirmed: v25.9.0
 - ✅ pnpm confirmed: v10.33.0
 - Confirm Apple Developer account status before TestFlight distribution (not urgent — deferred)
@@ -143,6 +143,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #1 — Expo SDK 54 project initialized, NativeWind v4 + TanStack Query v5 configured, full route structure built, Vercel connected and live at mybigmacros.vercel.app
 - ✅ Session 1 — GitHub repo created, .gitignore committed, git initialized, planning docs committed to main, 12 GitHub issues created
 - ✅ Planning phase — PRD, ARCHITECTURE.md, CHANGELOG.md, STATUS.md, END_OF_SESSION_CHECKLIST.md, .env.example, .env.local, CLAUDE.md
 
@@ -163,5 +164,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: April 30 2026*
+*Last updated: May 2 2026*
 *Product owner: Mallory Comes*
