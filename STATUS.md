@@ -9,9 +9,9 @@
 ## Current Status
 
 **Build Phase:** Pre-Build — Planning Complete
-**Last Updated:** April 2026
-**Last Session:** Planning phase complete — PRD, ARCHITECTURE.md, CHANGELOG.md, STATUS.md, END_OF_SESSION_CHECKLIST.md, .env.example, .env.local, and CLAUDE.md all created
-**Next Session Goal:** Complete product owner pre-session checklist (Supabase project, Mapbox account, GitHub repo, Vercel project, Node.js confirmed), then begin Issue #1 — Project Setup
+**Last Updated:** April 30 2026
+**Last Session:** Session 1 complete — GitHub repo created, 12 issues created, pre-session checklist completed, git initialized, planning docs committed to main
+**Next Session Goal:** Begin Issue #1 — Project Setup (Expo + TypeScript + NativeWind + Supabase + Vercel)
 
 ---
 
@@ -115,12 +115,12 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Open Questions
 
-- Confirm Supabase project URL and keys are filled into `.env.local` before first session
-- Confirm Mapbox access token is filled into `.env.local` before first session
+- ✅ Supabase project URL and keys confirmed in `.env.local`
+- ✅ Mapbox access token confirmed in `.env.local`
 - Decide on Vercel project name before first deploy — becomes the public portfolio URL
 - Decide on final app display name (used in Expo config `app.json`)
-- Confirm Node.js v18+ is installed (`node --version` in terminal)
-- Confirm pnpm is installed (`pnpm --version` in terminal)
+- ✅ Node.js confirmed: v25.9.0
+- ✅ pnpm confirmed: v10.33.0
 - Confirm Apple Developer account status before TestFlight distribution (not urgent — deferred)
 - Confirm API access for Cronometer and Lose It! before committing to v1 tracker integrations
 - [ ] Flip GitHub repo from private to public when ready to share with hiring managers — go to GitHub Settings → Danger Zone → Change visibility. Confirm .env.local was never committed first.
@@ -143,6 +143,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Session 1 — GitHub repo created, .gitignore committed, git initialized, planning docs committed to main, 12 GitHub issues created
 - ✅ Planning phase — PRD, ARCHITECTURE.md, CHANGELOG.md, STATUS.md, END_OF_SESSION_CHECKLIST.md, .env.example, .env.local, CLAUDE.md
 
 ---
@@ -162,5 +163,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: April 2026*
+*Last updated: April 30 2026*
 *Product owner: Mallory Comes*

@@ -30,6 +30,10 @@
 
 ### Added
 
+- `.gitignore` created with all required entries (environment files, Expo artifacts, native build artifacts, system files, EAS)
+- Git initialized and initial commit made to `main` — planning docs committed (CLAUDE.md, PRD.md, ARCHITECTURE.md, STATUS.md, CHANGELOG.md, END_OF_SESSION_CHECKLIST.md, .env.example, .gitignore)
+- Pre-session checklist completed: Supabase project and keys confirmed, Mapbox token confirmed, Node.js v25.9.0 confirmed, pnpm v10.33.0 confirmed, GitHub repo created
+- Docs PR opened and merged — STATUS.md, CHANGELOG.md, CLAUDE.md updated to reflect Session 1 completion
 - 12 GitHub issues created on `mraecomes/mybigmacros` (private repo), each with full description, acceptance criteria, use cases to validate, and edge cases:
   - `[Pre-Build] #1` — Project setup (Expo + TypeScript + NativeWind + Supabase + Vercel)
   - `[Pre-Build] #2` — Mapbox compatibility check (Expo managed workflow + web rendering)
@@ -92,5 +96,5 @@
 
 ---
 
-*Last updated: April 2026*
+*Last updated: April 30 2026*
 *Product owner: Mallory Comes*
