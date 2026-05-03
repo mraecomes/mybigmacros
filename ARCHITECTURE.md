@@ -117,22 +117,37 @@ Mapbox renders pins on map / list view populates
 
 ### 5. Map Rendering (Mapbox — Platform Split)
 
-Mapbox renders the map UI. Because the Mapbox React Native SDK and the Mapbox web JS library are different tools, the map is implemented as a platform-aware component.
+Mapbox renders the map UI. The Mapbox React Native SDK and the Mapbox web JS library are different packages — they cannot be imported on each other's platform. The map is implemented as a platform-split component using Metro's file extension resolution system.
+
+**Confirmed decision (Issue #2 — Mapbox Compatibility Check, May 2026):**
 
 ```
-Map component renders
+components/map/MapView.tsx          ← TypeScript type stub (not executed at runtime)
+components/map/MapView.native.tsx   ← iOS + Android: @rnmapbox/maps v10
+components/map/MapView.web.tsx      ← Browser + Vercel: mapbox-gl v3
+```
+
+Metro automatically resolves `.native.tsx` on iOS/Android and `.web.tsx` in the browser at build time. No runtime `Platform.OS` check is needed — the correct library is bundled per platform.
+
+```
+Import from '@/components/map/MapView'
           │
-     ┌────┴────────────────┐
-Platform.OS === 'web'    mobile (iOS / Android)
-     │                        │
-     ▼                        ▼
-mapbox-gl JS library    Mapbox React Native SDK
-(standard web library)  OR react-native-maps +
-                        Mapbox custom style layer
-                        (per compatibility check — see CLAUDE.md)
+     ┌────┴──────────────────────┐
+   Web build                Native build
+(EAS / Expo web)           (EAS Build only)
+     │                          │
+     ▼                          ▼
+MapView.web.tsx            MapView.native.tsx
+mapbox-gl v3               @rnmapbox/maps v10
 ```
 
-Both implementations use the Electric Diner dark mode Mapbox style. Both must be confirmed working before any other screen is built.
+Both use the Mapbox dark style (`mapbox://styles/mapbox/dark-v11`) to match the Electric Diner theme.
+
+**⚠️ Critical constraint:** `@rnmapbox/maps` requires native code not available in Expo Go. Native map testing requires an EAS Build (development or preview profile). Web map testing works immediately via `pnpm expo start --web`.
+
+**Libraries installed:**
+- `@rnmapbox/maps@^10.3.0` — native Mapbox SDK with Expo Config Plugin (added to `app.config.ts`)
+- `mapbox-gl@^3.23.0` — web Mapbox GL JS library (no Expo-specific config needed)
 
 ### 6. Nutrition Data (MenuStat → Supabase)
 
@@ -280,7 +295,7 @@ Preview deployments: every pull request gets its own Vercel preview URL for test
 | React Native SVG over Victory Native for Macro-Meter | More reliable on Expo web (Portfolio priority #1). Full control over the fuel gauge shape. No dependency surprises |
 | Static MenuStat data over live nutrition API | No rate limits, no ongoing cost, no API dependency risk. 2022 data covers core menu items at major chains reliably |
 | OpenStreetMap Overpass over Google Places / Foursquare | Free always, no API key, purpose-built for radius search. Google Places has no free tier. Foursquare free tier too limited |
-| Mapbox platform split (RN SDK mobile / mapbox-gl web) | Mapbox React Native SDK web rendering is unreliable. mapbox-gl JS is the correct native web tool. Platform.OS split keeps both working |
+| Mapbox platform split (Metro file extension: .native.tsx / .web.tsx) | mapbox-gl v3 (web) and @rnmapbox/maps v10 (native) are incompatible on each other's platform. Metro's extension resolution bundles the correct library per platform at build time — cleaner than runtime Platform.OS checks. @rnmapbox/maps requires EAS Build; not compatible with Expo Go. |
 | Fuse.js for chain name fuzzy matching | Lightweight, no server required, handles OSM naming inconsistencies at runtime without database overhead |
 | AsyncStorage caching for nutrition + location data | Drive-thru use case — poor connectivity is expected. Caching makes the app usable offline without a full offline mode |
 | Supabase over custom PostgreSQL | Managed infrastructure, built-in auth, RLS, storage, and dashboard — no DevOps required |
