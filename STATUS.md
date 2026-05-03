@@ -10,8 +10,8 @@
 
 **Build Phase:** Pre-Build — Issue #2 Complete
 **Last Updated:** May 3 2026
-**Last Session:** Session 3 complete — Issue #2 done: Mapbox platform-split map components installed and verified. @rnmapbox/maps (native) + mapbox-gl (web). Dark map confirmed rendering on web. ARCHITECTURE.md and CLAUDE.md updated with implementation decision and Expo Go constraint.
-**Next Session Goal:** Issue #3 — MenuStat 2022 XLS data prep + Supabase import (Node.js script)
+**Last Session:** Session 4 complete — Issue #3 done: MenuStat 2022 XLS cleaned and imported to Supabase. 26,237 rows, profiles + menu_items migrations applied, RLS verified, data quality report produced. Node.js import script with --inspect mode and integer rounding committed to repo.
+**Next Session Goal:** Issue #4 — OSM alias table + Fuse.js chain name matching
 
 ---
 
@@ -22,7 +22,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Task | Status | Notes |
 |------|--------|-------|
 | Mapbox compatibility check (Expo managed workflow + web rendering) | ✅ Complete | @rnmapbox/maps v10 (native, EAS Build required) + mapbox-gl v3 (web). Metro file extension split (.native.tsx / .web.tsx). Dark map verified on web. |
-| MenuStat data prep + Supabase import (Node.js script) | ⬜ Not started | Must complete before nutrition browser |
+| MenuStat data prep + Supabase import (Node.js script) | ✅ Complete | 26,237 rows imported. Node.js + xlsx script. profiles + menu_items migrations applied. Null handling and RLS verified via Supabase MCP. |
 | OSM → MenuStat alias table + Fuse.js fallback | ⬜ Not started | Must complete before location search |
 
 ---
@@ -143,6 +143,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #3 — MenuStat data prep + Supabase import: 26,237 rows in menu_items, profiles table created, both with RLS policies. Import script with --inspect mode, integer rounding, and data quality report
 - ✅ Issue #2 — Mapbox compatibility check: @rnmapbox/maps v10 + mapbox-gl v3 installed, platform-split MapView created, dark map verified rendering on Expo web
 - ✅ Issue #1 — Expo SDK 54 project initialized, NativeWind v4 + TanStack Query v5 configured, full route structure built, Vercel connected and live at mybigmacros.vercel.app
 - ✅ Session 1 — GitHub repo created, .gitignore committed, git initialized, planning docs committed to main, 12 GitHub issues created
@@ -165,5 +166,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: May 2 2026*
+*Last updated: May 3 2026*
 *Product owner: Mallory Comes*

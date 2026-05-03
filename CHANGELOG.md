@@ -26,6 +26,29 @@
 
 ---
 
+## [May 3 2026] — Session 4: Issue #3 — MenuStat 2022 XLS Prep + Supabase Import
+
+### Added
+
+- `scripts/menustat_import.js` — Node.js script using `xlsx` that reads `ms_annual_data_2022.xls`, normalizes column names (snake_case → space-separated for header mapping), handles missing/non-numeric values as `null` (never `0`), rounds calorie decimals to the nearest integer, outputs `scripts/menu_items_cleaned.csv`, and prints a data quality report: total rows, missing value counts per macro, and top 10 chains by missing macro rate
+- `supabase/migrations/20260503000000_create_profiles_table.sql` — profiles table with RLS policy restricting all operations to the authenticated user's own row (`auth.uid() = id`)
+- `supabase/migrations/20260503000001_create_menu_items_table.sql` — menu_items table with public read RLS policy — anonymous Supabase client can query, required for in-app nutrition lookups without requiring login
+- `xlsx@^0.18.5` — dev dependency only, used exclusively by the import script, never bundled into the app
+- `scripts/*.csv` added to `.gitignore` — generated CSV is a local artifact and must never be committed
+
+### Changed
+
+- `package.json` / `pnpm-lock.yaml` — updated with xlsx dev dependency
+
+### Decisions Made
+
+- **`--inspect` mode built into the script** — `node scripts/menustat_import.js --inspect` prints all sheet names and column headers without writing any files. Used to discover that the XLS columns use snake_case (`item_name`, `food_category`, `total_fat`, `dietary_fiber`, `serving_size`) rather than space-separated names. Fixed by normalizing underscores to spaces during header mapping — all 10 schema columns mapped correctly after one-line fix
+- **Calorie values rounded to integers** — MenuStat XLS stores some calorie values as floats (e.g., `651.1`). Supabase `integer` column type rejected these. Added `parseInteger()` helper using `Math.round()` before writing to CSV. Schema unchanged — `integer` is correct for calories
+- **Supabase CSV importer does not use a transaction** — the first (failed) import processed ~20,392 rows before hitting the integer error, leaving the table with 46,629 rows (partial first import + full second import). Detected via Supabase MCP row count check. Table truncated via MCP and re-imported cleanly. Always verify row count immediately after any CSV import
+- **Verified via Supabase MCP** — 26,237 rows confirmed, McDonald's spot check passed (Hamburger 250 cal, Cheeseburger 300 cal, Double Cheeseburger 440 cal), `null` calories confirmed on items with missing data (not 0), anonymous RLS read confirmed
+
+---
+
 ## [May 3 2026] — Session 3: Issue #2 — Mapbox Compatibility Check
 
 ### Added
