@@ -314,6 +314,13 @@ Complete all three pre-build tasks before writing any app code. Do not skip or r
 2. **MenuStat data prep + Supabase import** — Clean the MenuStat 2022 XLS file (ms_annual_data_2022.xls), define the `menu_items` table, run the import. Produce a data quality report (total items, missing calories count, missing macro counts, chains with highest gap rates)
 3. **OSM alias table** — Build `osm_aliases` in Supabase with known name variations for the top 30 chains. Implement Fuse.js fuzzy match fallback. Test against real Overpass results before moving on
 
+> **⚠️ Native Map Testing — Expo Go Cannot Be Used**
+> `@rnmapbox/maps` requires native code that is not available in the Expo Go sandbox.
+> Any issue or feature that involves rendering the map on a real device must plan for
+> an **EAS Development Client build** instead of Expo Go for native testing.
+> Web map testing via `pnpm expo start --web` works at any time with no build step.
+> This applies to: the Nearby screen, the Radius View, map pins, and any future map feature.
+
 After pre-build tasks are complete, proceed with the MVP build sequence defined in the PRD (Section 12).
 
 ---
