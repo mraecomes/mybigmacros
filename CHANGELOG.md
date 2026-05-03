@@ -26,6 +26,34 @@
 
 ---
 
+## [May 3 2026] — Session 3: Issue #2 — Mapbox Compatibility Check
+
+### Added
+
+- `@rnmapbox/maps@^10.3.0` — Mapbox React Native SDK for iOS and Android. Registered as an Expo Config Plugin in `app.config.ts` so the native Mapbox SDK is linked at EAS Build time
+- `mapbox-gl@^3.23.0` — standard Mapbox GL JS library for web rendering. Bundled via Expo Metro for web; CSS auto-bundled (40.9 kB) from `mapbox-gl/dist/mapbox-gl.css`
+- `components/map/MapView.native.tsx` — native Mapbox map component using `@rnmapbox/maps`. Renders dark Mapbox style (`mapbox://styles/mapbox/dark-v11`), camera, and user location dot
+- `components/map/MapView.web.tsx` — web Mapbox map component using `mapbox-gl`. Mounts into a `div` via `useRef` and `useEffect`. Same dark style as native
+- `components/map/MapView.tsx` — TypeScript stub file so editors and `tsc` can resolve the import. Metro replaces it at build time with the correct platform file
+- `types/map.ts` — shared `MapViewProps` type (`latitude`, `longitude`, `zoom`) used by both platform components
+
+### Changed
+
+- `app.config.ts` — added `@rnmapbox/maps` to the `plugins` array to register the native Expo Config Plugin
+- `app/(tabs)/nearby.tsx` — wired in `MapView` component with hardcoded San Francisco coordinates for render verification. Geolocation and Overpass API integration deferred to Issue #8
+- `ARCHITECTURE.md` — replaced TBD Mapbox note with confirmed implementation: Metro file extension resolution, library versions, and the Expo Go constraint documented prominently
+- `CLAUDE.md` — added ⚠️ note in the Pre-Build Tasks section: Expo Go cannot be used for map testing; any map feature must plan for an EAS Development Client build for native verification
+
+### Decisions Made
+
+- **Platform split via Metro file extensions, not `Platform.OS` checks** — `.native.tsx` and `.web.tsx` cause Metro to bundle the correct library per platform at build time. Native Mapbox code never enters the web bundle; web Mapbox code never enters the native bundle. Cleaner and safer than runtime checks
+- **`@rnmapbox/maps` chosen over `react-native-maps` for native** — `react-native-maps` does not support Mapbox custom style URLs natively. `@rnmapbox/maps` supports full Mapbox styling (required for the Electric Diner dark map) and works in Expo managed workflow via its Config Plugin
+- **Expo Go cannot be used for native map testing** — `@rnmapbox/maps` requires native code not available in the Expo Go sandbox. EAS Development Client or EAS Build (preview/production profile) required for any native map testing. Web testing via `pnpm expo start --web` works at any time
+- **`@types/mapbox-gl` not installed** — `mapbox-gl@^3` ships its own TypeScript definitions; the separate types package is a deprecated stub and was removed after install
+- **mapbox-gl v3 peer dep warning with @rnmapbox/maps** — `@rnmapbox/maps@10` lists `mapbox-gl@^2.9.0` as a peer dependency (a legacy of older shared-SDK architectures). This warning is safe to ignore — the two libraries run on separate platforms and never interact at runtime
+
+---
+
 ## [May 2 2026] — Session 2: Issue #1 — Project Setup
 
 ### Added
@@ -139,5 +167,5 @@
 
 ---
 
-*Last updated: May 2 2026*
+*Last updated: May 3 2026*
 *Product owner: Mallory Comes*

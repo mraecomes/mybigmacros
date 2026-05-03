@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** Pre-Build — Issue #1 Complete
-**Last Updated:** May 2 2026
-**Last Session:** Session 2 complete — Issue #1 done: Expo SDK 54 project initialized, NativeWind v4 + TanStack Query v5 configured, full route structure built, Vercel live at mybigmacros.vercel.app
-**Next Session Goal:** Issue #2 — Mapbox compatibility check (Expo managed workflow + web rendering)
+**Build Phase:** Pre-Build — Issue #2 Complete
+**Last Updated:** May 3 2026
+**Last Session:** Session 3 complete — Issue #2 done: Mapbox platform-split map components installed and verified. @rnmapbox/maps (native) + mapbox-gl (web). Dark map confirmed rendering on web. ARCHITECTURE.md and CLAUDE.md updated with implementation decision and Expo Go constraint.
+**Next Session Goal:** Issue #3 — MenuStat 2022 XLS data prep + Supabase import (Node.js script)
 
 ---
 
@@ -21,7 +21,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Mapbox compatibility check (Expo managed workflow + web rendering) | ⬜ Not started | Highest risk item — resolve before any UI |
+| Mapbox compatibility check (Expo managed workflow + web rendering) | ✅ Complete | @rnmapbox/maps v10 (native, EAS Build required) + mapbox-gl v3 (web). Metro file extension split (.native.tsx / .web.tsx). Dark map verified on web. |
 | MenuStat data prep + Supabase import (Node.js script) | ⬜ Not started | Must complete before nutrition browser |
 | OSM → MenuStat alias table + Fuse.js fallback | ⬜ Not started | Must complete before location search |
 
@@ -143,6 +143,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #2 — Mapbox compatibility check: @rnmapbox/maps v10 + mapbox-gl v3 installed, platform-split MapView created, dark map verified rendering on Expo web
 - ✅ Issue #1 — Expo SDK 54 project initialized, NativeWind v4 + TanStack Query v5 configured, full route structure built, Vercel connected and live at mybigmacros.vercel.app
 - ✅ Session 1 — GitHub repo created, .gitignore committed, git initialized, planning docs committed to main, 12 GitHub issues created
 - ✅ Planning phase — PRD, ARCHITECTURE.md, CHANGELOG.md, STATUS.md, END_OF_SESSION_CHECKLIST.md, .env.example, .env.local, CLAUDE.md
