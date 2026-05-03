@@ -30,6 +30,7 @@ ios/
 
 # Data files (local only — never commit)
 ms_annual_data_2022.xls
+scripts/*.csv
 
 # Claude Code internal config
 .claude/
