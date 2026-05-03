@@ -668,6 +668,8 @@ GitHub MCP lets Claude Code manage the issue-based workflow without manual steps
 - Open pull requests with the correct title format and `Closes #[number]` in the description
 - Confirm branch status and merge state
 
+> GitHub personal access token configured with repo scope on selected repository only — required for Claude Code to read and update private repo issues. Token is stored in `~/.claude.json` and never committed to the repo.
+
 **Standard session workflow using GitHub MCP:**
 1. At session start: ask Claude Code to check open issues and confirm the current branch
 2. At session end: ask Claude Code to commit, push, open a PR, and confirm it is ready to merge
