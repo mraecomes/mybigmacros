@@ -26,6 +26,41 @@
 
 ---
 
+## [May 3 2026] — Session 5: Issue #4 — OSM Alias Table + Fuse.js Chain Name Matching
+
+### Added
+
+- `supabase/migrations/20260503000002_create_osm_aliases_table.sql` — DDL migration. Creates `osm_aliases` table with `osm_name text not null unique` (enforces one OSM name → one canonical name, fast index for exact lookups), `chain_name text not null`, RLS enabled, public SELECT policy
+- `supabase/migrations/20260503000003_seed_osm_aliases.sql` — 172 alias rows across 46 chains. Covers abbreviations (BK, DQ, BWW), missing apostrophes (McDonalds, Wendys), full brand names (Kentucky Fried Chicken → KFC, Saint Louis Bread Company → Panera Bread), punctuation variants (Chick-fil-A, Chick-Fil-A, Chickfila → Chick Fil A), and separator variants (Checker's Drive-In/ Rally's has 7 aliases)
+- `supabase/migrations/20260503000004_create_get_chain_names_fn.sql` — SQL function `get_chain_names()` returning `SELECT DISTINCT chain_name FROM menu_items`. Created to work around PostgREST's 1000-row server-side result cap, which caused direct `menu_items` queries to return only 4 chains (alphabetically first), breaking fuzzy match for all other chains
+- `supabase/migrations/20260503000005_add_einstein_bagels_alias.sql` — Added `('Einstein Bros. Bagels', 'Einstein Bros')` after real-world Overpass test revealed OSM tags this chain with a period after "Bros." that existing aliases missed
+- `lib/supabase/client.ts` — Single Supabase client export for the entire app. Uses `createClient()` from `@supabase/supabase-js`. Throws at initialization time if `EXPO_PUBLIC_SUPABASE_URL` or `EXPO_PUBLIC_SUPABASE_ANON_KEY` are missing — catches misconfiguration at startup rather than silently returning bad data
+- `types/matching.ts` — TypeScript types for the matching subsystem: `OsmAlias`, `ChainMatchResult` (`canonical`, `source: 'exact' | 'fuzzy'`, `score: number | null`), `ChainMatchInput` (`brand?`, `name?`)
+- `lib/matching/chainMatcher.ts` — Two-step chain name matching pipeline: (1) exact lookup in `osm_aliases` via `.maybeSingle()`, (2) Fuse.js fuzzy match against canonical chain names from `get_chain_names()`. Module-level cache for canonical names and Fuse.js index — initialized once per process. Exports `_resetCacheForTesting()` to clear cache between test cases. Alias lookup errors fall through to fuzzy rather than failing hard
+- `scripts/test_chain_matcher.ts` — 14-case unit test suite covering Issue #4 acceptance criteria: exact alias hits (BK, Checkers, McDonalds), fuzzy misspellings (Burger Kng), threshold guards (Wendy's NOT Denny's), brand/name fallback priority, empty/whitespace inputs
+- `scripts/test_overpass_match.ts` — Real-world Overpass API integration test. Queries fast food within 5km of Desert Ridge Marketplace, Phoenix AZ. Passes all returned OSM `brand`/`name` tags through `matchChainName()` and reports match rate. Result: 15/15 MenuStat chains matched (100%); 9 correctly returned null (regional chains not in MenuStat)
+- `@supabase/supabase-js` — Supabase JS client. Installed with `pnpm add` (not `pnpm expo install`) — pure JS library, no Expo-specific version
+- `fuse.js` — Fuzzy matching library. Installed with `pnpm add` — pure JS utility, no Expo-specific version
+- `tsx` (dev) — TypeScript runner for test scripts. Also automatically loads `.env.local` in Node.js context
+- `dotenv` (dev) — Explicit `.env.local` loader used as an additional guard in test scripts for CJS import hoisting compatibility
+
+### Changed
+
+- `package.json` / `pnpm-lock.yaml` — updated with `@supabase/supabase-js`, `fuse.js`, `tsx`, and `dotenv`
+- `lib/supabase/.gitkeep` — deleted; replaced by `client.ts`
+- `lib/matching/.gitkeep` — deleted; replaced by `chainMatcher.ts`
+
+### Decisions Made
+
+- **`chain_name` column name (not `canonical_name`)** — matches the existing `chain_name` column in `menu_items`. Consistent naming avoids ambiguity when joining or cross-referencing tables. Decision made mid-session after initial plan used `canonical_name`
+- **`osm_name UNIQUE` constraint** — enforces one-to-one OSM → canonical mapping and creates an implicit index for fast exact lookups. If OSM ever uses two different names for the same chain, two separate alias rows are correct; a single OSM name pointing to two different chains would be a data error
+- **`get_chain_names()` SQL function for PostgREST row limit** — PostgREST's server-side default caps all query results at 1000 rows and cannot be overridden by the client `.limit()` call. Direct `SELECT * FROM menu_items` returned only the first 1000 of 26,237 rows (alphabetically, only 4 chains). A SQL function returning `SELECT DISTINCT chain_name` returns 95 rows — well under the cap. Cleaner than pagination and avoids fetching 26k rows when only 95 chain names are needed
+- **Fuse.js threshold 0.3** — empirically validated: "Burger Kng" → "Burger King" scores 0.196 (passes); "Wendy's" → "Denny's" correctly blocked (score > 0.3). `ignoreLocation: true` set because full-string chain name comparison has no meaningful concept of substring position
+- **Dynamic `import()` pattern for test scripts** — TypeScript compiles static `import` statements to `require()` calls hoisted to the top of the compiled file. If `client.ts` is a static import, it is evaluated before `dotenv.config()` runs, causing the "missing env vars" error. Using `await import('../lib/matching/chainMatcher')` inside an async function defers `client.ts` evaluation until after dotenv has populated the environment
+- **`curl` for Overpass API in test scripts** — Node.js 22+ built-in fetch (`undici`) sends `Accept-Encoding: br, gzip, deflate` by default. Overpass API's Apache server rejects Brotli with a 406 Not Acceptable error. Header overrides are ignored by `undici`. `curl --compressed` works correctly. This issue is specific to Node.js scripts — in the app's Metro bundler context, `fetch` behaves normally
+
+---
+
 ## [May 3 2026] — Session 4: Issue #3 — MenuStat 2022 XLS Prep + Supabase Import
 
 ### Added

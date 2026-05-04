@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** Pre-Build — Issue #2 Complete
+**Build Phase:** Pre-Build — All Pre-Build Tasks Complete
 **Last Updated:** May 3 2026
-**Last Session:** Session 4 complete — Issue #3 done: MenuStat 2022 XLS cleaned and imported to Supabase. 26,237 rows, profiles + menu_items migrations applied, RLS verified, data quality report produced. Node.js import script with --inspect mode and integer rounding committed to repo.
-**Next Session Goal:** Issue #4 — OSM alias table + Fuse.js chain name matching
+**Last Session:** Session 5 complete — Issue #4 done: osm_aliases table created and seeded with 172 aliases across 46 chains. Fuse.js fuzzy match fallback implemented. 14/14 unit tests passing. Real-world Overpass validation: 15/15 MenuStat chains matched (100%). All three pre-build tasks now complete.
+**Next Session Goal:** Issue #5 — Centralized theme.ts (typography + spacing tokens) + MVP build begins
 
 ---
 
@@ -23,7 +23,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 |------|--------|-------|
 | Mapbox compatibility check (Expo managed workflow + web rendering) | ✅ Complete | @rnmapbox/maps v10 (native, EAS Build required) + mapbox-gl v3 (web). Metro file extension split (.native.tsx / .web.tsx). Dark map verified on web. |
 | MenuStat data prep + Supabase import (Node.js script) | ✅ Complete | 26,237 rows imported. Node.js + xlsx script. profiles + menu_items migrations applied. Null handling and RLS verified via Supabase MCP. |
-| OSM → MenuStat alias table + Fuse.js fallback | ⬜ Not started | Must complete before location search |
+| OSM → MenuStat alias table + Fuse.js fallback | ✅ Complete | 172 aliases, 46 chains. Fuse.js threshold 0.3. get_chain_names() SQL function to bypass PostgREST row limit. 14/14 unit tests + 15/15 Overpass integration test passing. |
 
 ---
 
@@ -143,6 +143,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #4 — OSM alias table + Fuse.js matching: osm_aliases table with 172 aliases across 46 chains, chainMatcher.ts two-step pipeline (exact → fuzzy), get_chain_names() SQL function, 14/14 unit tests + 15/15 Overpass integration test (100% match rate)
 - ✅ Issue #3 — MenuStat data prep + Supabase import: 26,237 rows in menu_items, profiles table created, both with RLS policies. Import script with --inspect mode, integer rounding, and data quality report
 - ✅ Issue #2 — Mapbox compatibility check: @rnmapbox/maps v10 + mapbox-gl v3 installed, platform-split MapView created, dark map verified rendering on Expo web
 - ✅ Issue #1 — Expo SDK 54 project initialized, NativeWind v4 + TanStack Query v5 configured, full route structure built, Vercel connected and live at mybigmacros.vercel.app
