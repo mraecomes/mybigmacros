@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** Pre-Build — All Pre-Build Tasks Complete
-**Last Updated:** May 3 2026
-**Last Session:** Session 5 complete — Issue #4 done: osm_aliases table created and seeded with 172 aliases across 46 chains. Fuse.js fuzzy match fallback implemented. 14/14 unit tests passing. Real-world Overpass validation: 15/15 MenuStat chains matched (100%). All three pre-build tasks now complete.
-**Next Session Goal:** Issue #5 — Centralized theme.ts (typography + spacing tokens) + MVP build begins
+**Build Phase:** MVP — Issue #5 Complete
+**Last Updated:** May 4 2026
+**Last Session:** Session 6 complete — Issue #5 done: Electric Diner design system implemented. typography, spacing, and radii tokens added to theme.ts. Bungee + Inter fonts loaded. tailwind.config.js wired to NativeWind. 5 UI primitives built (Button, Card, Badge, Input, SkeletonLoader). All verified on Expo web. tsc --noEmit passes.
+**Next Session Goal:** Issue #6 — Authentication + onboarding flow
 
 ---
 
@@ -33,7 +33,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 |---------|--------|-------|
 | CLAUDE.md created | ✅ Complete | |
 | Project setup (Expo + TypeScript + NativeWind + Supabase) | ✅ Complete | |
-| Centralized theme.ts (Electric Diner palette) | ✅ Complete | Colors defined in constants/theme.ts; typography + spacing tokens in Issue #5 |
+| Centralized theme.ts (Electric Diner palette) | ✅ Complete | Full design token system: colors, typography (Bungee/Inter), spacing, radii. 5 UI primitives in components/ui/. NativeWind wired. |
 | Authentication — sign up | ⬜ Not started | |
 | Authentication — login / logout | ⬜ Not started | |
 | Authentication — password reset | ⬜ Not started | |
@@ -132,7 +132,6 @@ None — planning phase complete, ready to begin pre-build tasks.
 | Decision | Needed By | Notes |
 |----------|-----------|-------|
 | Mapbox implementation path (RN SDK vs react-native-maps + style layer) | Pre-build task #1 | Claude Code resolves this first |
-| Retro display font selection | Before first UI components | Header / app name font only — never for data |
 | Apple HealthKit integration approach | v1 | Confirm React Native path before building |
 | Cronometer / Lose It! API access | v1 | Treat as stretch goals until access confirmed |
 | Notification email template design | v2 | Should match Electric Diner design direction |
@@ -143,6 +142,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #5 — Electric Diner design system: typography/spacing/radii tokens in theme.ts, Bungee + Inter fonts loaded, tailwind.config.js extended, 5 UI primitives (Button, Card, Badge, Input, SkeletonLoader) verified on Expo web
 - ✅ Issue #4 — OSM alias table + Fuse.js matching: osm_aliases table with 172 aliases across 46 chains, chainMatcher.ts two-step pipeline (exact → fuzzy), get_chain_names() SQL function, 14/14 unit tests + 15/15 Overpass integration test (100% match rate)
 - ✅ Issue #3 — MenuStat data prep + Supabase import: 26,237 rows in menu_items, profiles table created, both with RLS policies. Import script with --inspect mode, integer rounding, and data quality report
 - ✅ Issue #2 — Mapbox compatibility check: @rnmapbox/maps v10 + mapbox-gl v3 installed, platform-split MapView created, dark map verified rendering on Expo web
@@ -167,5 +167,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: May 3 2026*
+*Last updated: May 4 2026*
 *Product owner: Mallory Comes*
