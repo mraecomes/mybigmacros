@@ -10,7 +10,7 @@ export default function NotFoundScreen() {
         <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.textPrimary }}>
           This screen doesn't exist.
         </Text>
-        <Link href="/" style={{ marginTop: 15, paddingVertical: 15 }}>
+        <Link href="/(tabs)/nearby" style={{ marginTop: 15, paddingVertical: 15 }}>
           <Text style={{ fontSize: 14, color: colors.secondary }}>Go to home screen</Text>
         </Link>
       </View>

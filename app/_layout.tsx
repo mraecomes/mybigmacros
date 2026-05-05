@@ -1,4 +1,10 @@
 import '../global.css';
+import { Bungee_400Regular } from '@expo-google-fonts/bungee';
+import {
+  Inter_400Regular,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -11,7 +17,10 @@ export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
 
   const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Bungee_400Regular,
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   useEffect(() => {
