@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
+    ...(Platform.OS === 'web' && { maxWidth: 400, alignSelf: 'center' as const, width: '100%' }),
   },
   primary: {
     backgroundColor: colors.primary,

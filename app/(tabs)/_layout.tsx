@@ -1,3 +1,4 @@
+import { AppName } from '@/components/ui/AppName';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
@@ -26,8 +27,10 @@ export default function TabLayout() {
         headerStyle: {
           backgroundColor: colors.background,
         },
-        headerTintColor: colors.textPrimary,
-        headerShown: false,
+        headerShadowVisible: false,
+        headerTitle: () => <AppName size="header" />,
+        headerTitleAlign: 'center',
+        headerShown: true,
       }}
     >
       <Tabs.Screen
