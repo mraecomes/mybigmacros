@@ -488,6 +488,7 @@ These rules apply to every file in every session. Never skip them, even for quic
 - Use `Platform.OS` for any behavior that differs between mobile and web — never let web break silently
 - Always test web rendering after any map or SVG-related change — these are the most likely to behave differently
 - Never assume a React Native component renders correctly on web without checking
+- On web, never apply `fontFamily` in inline styles on components that mount during initial load — use `StyleSheet.create` with a loaded font check, or omit `fontFamily` on placeholder/stub screens entirely. Custom fonts have a brief paint delay on web that can cause text to render invisibly
 
 ### Security
 - Never hardcode API keys, tokens, or secrets anywhere in the codebase

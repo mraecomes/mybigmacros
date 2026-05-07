@@ -26,6 +26,37 @@
 
 ---
 
+## [May 7 2026] — Issue #7 — Navigation Structure (Web Top Nav + Mobile Tab Bar)
+
+### Added
+
+- `components/navigation/TopNav.tsx` — web-only top nav component. Wide layout (≥768px): horizontal nav items with icon + label, 2px Ketchup Red underline on active item. Narrow layout (<768px): hamburger icon that toggles a dropdown menu with 3px left bar active indicator. Uses `usePathname()` for active state, `useWindowDimensions()` for responsive breakpoint. All colors from `theme.ts`, routes typed as `Href`
+
+### Changed
+
+- `app/(tabs)/_layout.tsx` — platform-split navigation: `TopNav` rendered above `Tabs` on web, tab bar hidden via `tabBarStyle: { display: 'none' }` on web, headers shown on mobile and hidden on web. Native tab bar behavior unchanged
+- `app/_layout.tsx` — two web-specific fixes: (1) loading state now renders `<View style={{ flex: 1, backgroundColor: colors.background }} />` on web instead of `return null` — prevents white flash during auth/font load; (2) `fontError` captured from `useFonts`, `fontsReady = loaded || !!fontError` prevents indefinite block on font load failure
+- `lib/supabase/client.ts` — replaced Navigator Locks API with `processLock` (inline in-memory promise-chain serializer) on web via `auth: { lock: processLock }`. Added URL hash detection for `PASSWORD_RECOVERY` at module load time before Supabase clears the hash. Removed the module-level `onAuthStateChange` subscription that was racing Supabase's `initialize()` for the lock. Exported `consumePendingRecovery()` for `_layout.tsx` to consume the flag on `INITIAL_SESSION`
+- `app/(tabs)/browse.tsx` — removed `fontFamily` from placeholder `Text` inline styles; simplified to system font to prevent invisible-text paint window on web
+- `app.config.ts` — `web.output` changed from `'static'` to `'single'` to enable Metro's `HistoryFallbackMiddleware`, which serves the SPA `index.html` for all URL paths — required for direct URL navigation to any tab route
+
+### Fixed
+
+- **White screen on direct URL navigation** — `expo-splash-screen` is a complete no-op on web (all functions are empty stubs). `return null` during font/auth loading showed the browser's white default background with no cover. Fixed by returning a dark background `View` on web during loading state
+- **Navigator Lock cascade error #1 — "Lock was released because another request stole it"** — module-level `onAuthStateChange` in `client.ts` competed with Supabase `initialize()` for the Navigator Lock. Both operations had 5s timeouts; one stole the lock from the other, causing `INITIAL_SESSION` to fire with `null` → auth went unauthenticated → redirected to login. Fixed by removing the module-level subscription; `PASSWORD_RECOVERY` detection moved to URL hash inspection at module load time
+- **Navigator Lock cascade error #2 — "Lock broken by another request with the 'steal' option"** — `profile.tsx` called `supabase.auth.getSession()` on mount, acquiring the Navigator Lock with no timeout (`-1`). Raced against `INITIAL_SESSION`'s 5s-timeout lock acquisition; when INITIAL_SESSION timed out and stole the lock, `getSession()` received a DOMException. Fixed by replacing Navigator Locks API entirely with `processLock` — a promise-chain serializer with no timeouts or steals
+- **Browse screen blank/invisible text** — `browse.tsx` had `fontFamily: typography.fontFamily.body` (`Inter_400Regular`) in inline styles. On web, there is a brief paint window after `@font-face` registration where newly-mounted DOM elements with a custom `fontFamily` render invisibly. Budget, nearby, and profile did not trigger this because they either used no custom font or had loading states that delayed text rendering. Fixed by removing `fontFamily` from the placeholder screen entirely
+- **Font load failure blocking app indefinitely** — `useFonts` returns `[loaded, error]` but `error` was not captured. A font load failure left `loaded = false` permanently and the app never exited its loading state. Fixed by capturing `fontError` and computing `fontsReady = loaded || !!fontError`
+
+### Decisions Made
+
+- **`web.output: 'single'` replaces `'static'`** — `'static'` generates per-route HTML at build time (SSG) which breaks auth-guarded routes that cannot be pre-rendered. `'single'` generates one `index.html` and activates Metro's `HistoryFallbackMiddleware`, which serves it for all URL paths — correct for an auth-guarded SPA. The `'static'` setting from Issue #1 was the architectural root cause of the direct-URL white screen
+- **`processLock` (in-memory promise-chain) over Navigator Locks API on web** — this app is single-process with no cross-tab state; Navigator Locks adds cross-tab coordination overhead plus 5s steal timeouts that cascade when multiple async auth operations compete on page load. `processLock` serializes all auth operations via a promise chain with zero timeouts — no steals, no timeouts, no cascades. `@supabase/auth-js` exports its own `processLock` internally but as a transitive dependency it cannot be imported directly; the inline implementation is functionally identical
+- **URL hash detection at module load for PASSWORD_RECOVERY** — Supabase processes the URL hash (`type=recovery`) during `initialize()` and clears it before React renders. By the time `useEffect` registers the `onAuthStateChange` listener, the hash is already gone and only `INITIAL_SESSION` replays. Reading `window.location.hash` at module load time (before Supabase runs) is the only reliable detection point. The flag is consumed exactly once in the `INITIAL_SESSION` handler via `consumePendingRecovery()`
+- **`fontFamily` omitted on placeholder/stub screens on web** — any `Text` with a custom `fontFamily` that mounts during initial load can render invisibly for a brief window while the browser applies the registered `@font-face`. Placeholder and stub screens must not apply `fontFamily` in inline styles; use `StyleSheet.create` with a font-loaded guard only in screens with real content
+
+---
+
 ## [May 6 2026] — Sessions 7–8: Issue #6 — Authentication + Onboarding Flow
 
 ### Added
