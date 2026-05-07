@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #5 Complete
-**Last Updated:** May 4 2026
-**Last Session:** Session 6 complete — Issue #5 done: Electric Diner design system implemented. typography, spacing, and radii tokens added to theme.ts. Bungee + Inter fonts loaded. tailwind.config.js wired to NativeWind. 5 UI primitives built (Button, Card, Badge, Input, SkeletonLoader). All verified on Expo web. tsc --noEmit passes.
-**Next Session Goal:** Issue #6 — Authentication + onboarding flow
+**Build Phase:** MVP — Issue #6 Complete
+**Last Updated:** May 6 2026
+**Last Session:** Sessions 7–8 complete — Issue #6 done: Supabase Auth integration (sign up, sign in, sign out, password reset + recovery, delete account), 3-step onboarding (name → photo → calorie goal), full Profile screen (inline editing, photo upload/remove, delete account confirm), root layout session guard with AuthState discriminated union, AppName pun component, Input/Button 600px web max-width, password strength bar, real-time match indicator, updated login tagline. All verified on Expo web.
+**Next Session Goal:** Issue #7 — Navigation structure (bottom tabs mobile / top nav web)
 
 ---
 
@@ -34,12 +34,12 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | CLAUDE.md created | ✅ Complete | |
 | Project setup (Expo + TypeScript + NativeWind + Supabase) | ✅ Complete | |
 | Centralized theme.ts (Electric Diner palette) | ✅ Complete | Full design token system: colors, typography (Bungee/Inter), spacing, radii. 5 UI primitives in components/ui/. NativeWind wired. |
-| Authentication — sign up | ⬜ Not started | |
-| Authentication — login / logout | ⬜ Not started | |
-| Authentication — password reset | ⬜ Not started | |
-| Authentication — delete account | ⬜ Not started | |
-| Onboarding flow (name → photo → calorie goal) | ⬜ Not started | |
-| User profile screen | ⬜ Not started | |
+| Authentication — sign up | ✅ Complete | Email + password, strength bar, confirm match indicator, email confirmation card |
+| Authentication — login / logout | ✅ Complete | Single error message (no email enumeration), loading state, sign out from profile screen |
+| Authentication — password reset | ✅ Complete | Reset email flow + update-password screen, PASSWORD_RECOVERY intercept via module-level listener |
+| Authentication — delete account | ✅ Complete | Two-tap confirm card, delete_user() RPC with SECURITY DEFINER |
+| Onboarding flow (name → photo → calorie goal) | ✅ Complete | 3-step with dot indicator, photo optional, calorie goal optional |
+| User profile screen | ✅ Complete | Inline editing, photo upload/remove with cache-busting, calorie goal prompt, delete account |
 | Navigation (bottom tabs mobile / top nav web) | ⬜ Not started | Build before any screens |
 | Restaurant locator — geolocation + zip fallback | ⬜ Not started | |
 | Restaurant locator — Overpass API query | ⬜ Not started | Depends on OSM alias table |
@@ -142,6 +142,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #6 — Authentication + onboarding flow: Supabase Auth (sign up, sign in, sign out, password reset + recovery, delete account), 3-step onboarding, full Profile screen with inline editing + photo upload, root layout session guard with AuthState discriminated union, AppName pun component, Input/Button 600px web constraints, password strength bar, real-time match indicator
 - ✅ Issue #5 — Electric Diner design system: typography/spacing/radii tokens in theme.ts, Bungee + Inter fonts loaded, tailwind.config.js extended, 5 UI primitives (Button, Card, Badge, Input, SkeletonLoader) verified on Expo web
 - ✅ Issue #4 — OSM alias table + Fuse.js matching: osm_aliases table with 172 aliases across 46 chains, chainMatcher.ts two-step pipeline (exact → fuzzy), get_chain_names() SQL function, 14/14 unit tests + 15/15 Overpass integration test (100% match rate)
 - ✅ Issue #3 — MenuStat data prep + Supabase import: 26,237 rows in menu_items, profiles table created, both with RLS policies. Import script with --inspect mode, integer rounding, and data quality report
@@ -167,5 +168,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: May 4 2026*
+*Last updated: May 6 2026*
 *Product owner: Mallory Comes*
