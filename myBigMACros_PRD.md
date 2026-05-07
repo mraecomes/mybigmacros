@@ -126,7 +126,7 @@ Account creation is required to use myBigMACros — there is no guest mode. The 
 - Session management via Supabase Auth (JWT-based)
 
 #### UX Detail
-- Login errors must distinguish between unrecognized email and incorrect password — never show a generic "Invalid credentials" message
+- Login errors must use a single message for all sign-in failures: "The email or password you entered is incorrect. Please try again." Do not distinguish between unrecognized email and incorrect password — doing so enables email enumeration attacks where an attacker identifies valid accounts by comparing error responses
 - Password reset emails must arrive within 30 seconds
 - After skipping daily calorie goal at onboarding, a persistent but non-intrusive prompt in the Profile screen encourages the user to set it later — never a blocking interstitial
 

@@ -210,6 +210,7 @@ create policy "Public read access for osm_aliases"
 > ⚠️ Do NOT create a `notifications` table during MVP — this is a v2 feature.
 > ⚠️ Do NOT create a `favorites` or `meal_log` table during MVP — these are v2 features.
 > ⚠️ Do NOT create a `reviews` table — this is a v3 feature.
+> ⚠️ All v2+ tables that store user-owned data (favorites, meal_log, reviews, etc.) must use `references profiles(id) on delete cascade` — never `references auth.users(id)` directly. When `delete_user()` removes a user's profiles row, cascade ensures all associated data is automatically deleted. Any table that references auth.users directly will leave orphaned rows behind.
 
 ---
 
