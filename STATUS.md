@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #6 Complete
-**Last Updated:** May 6 2026
-**Last Session:** Sessions 7–8 complete — Issue #6 done: Supabase Auth integration (sign up, sign in, sign out, password reset + recovery, delete account), 3-step onboarding (name → photo → calorie goal), full Profile screen (inline editing, photo upload/remove, delete account confirm), root layout session guard with AuthState discriminated union, AppName pun component, Input/Button 600px web max-width, password strength bar, real-time match indicator, updated login tagline. All verified on Expo web.
-**Next Session Goal:** Issue #7 — Navigation structure (bottom tabs mobile / top nav web)
+**Build Phase:** MVP — Issue #7 Complete
+**Last Updated:** May 7 2026
+**Last Session:** Issue #7 complete — Navigation structure: web top nav (TopNav.tsx with hamburger collapse at 768px), platform-split tab layout (TopNav on web / native tab bar on mobile). Fixed three web-only bugs: white screen on direct URL nav, two Supabase Navigator Lock cascade errors, and invisible text on browse screen. app.config.ts changed to web.output: 'single' for SPA routing.
+**Next Session Goal:** Issue #8 — Restaurant locator (geolocation + Overpass API + map + list view)
 
 ---
 
@@ -40,7 +40,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Authentication — delete account | ✅ Complete | Two-tap confirm card, delete_user() RPC with SECURITY DEFINER |
 | Onboarding flow (name → photo → calorie goal) | ✅ Complete | 3-step with dot indicator, photo optional, calorie goal optional |
 | User profile screen | ✅ Complete | Inline editing, photo upload/remove with cache-busting, calorie goal prompt, delete account |
-| Navigation (bottom tabs mobile / top nav web) | ⬜ Not started | Build before any screens |
+| Navigation (bottom tabs mobile / top nav web) | ✅ Complete | TopNav.tsx (web, hamburger at 768px), platform-split layout, web.output: 'single', Navigator Lock fix via processLock, white-screen loading fix |
 | Restaurant locator — geolocation + zip fallback | ⬜ Not started | |
 | Restaurant locator — Overpass API query | ⬜ Not started | Depends on OSM alias table |
 | Restaurant locator — map view (Mapbox) | ⬜ Not started | Depends on Mapbox compatibility check |
@@ -142,6 +142,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #7 — Navigation structure: TopNav.tsx web top nav with hamburger collapse, platform-split tab layout (TopNav on web / native tab bar on mobile), app.config.ts web.output changed to 'single' for SPA routing. Fixed: white screen on direct URL nav (expo-splash-screen is a no-op on web), two Supabase Navigator Lock cascade errors replaced with processLock (in-memory promise-chain lock), invisible text on browse screen (font-face paint delay), font load failure blocking app indefinitely
 - ✅ Issue #6 — Authentication + onboarding flow: Supabase Auth (sign up, sign in, sign out, password reset + recovery, delete account), 3-step onboarding, full Profile screen with inline editing + photo upload, root layout session guard with AuthState discriminated union, AppName pun component, Input/Button 600px web constraints, password strength bar, real-time match indicator
 - ✅ Issue #5 — Electric Diner design system: typography/spacing/radii tokens in theme.ts, Bungee + Inter fonts loaded, tailwind.config.js extended, 5 UI primitives (Button, Card, Badge, Input, SkeletonLoader) verified on Expo web
 - ✅ Issue #4 — OSM alias table + Fuse.js matching: osm_aliases table with 172 aliases across 46 chains, chainMatcher.ts two-step pipeline (exact → fuzzy), get_chain_names() SQL function, 14/14 unit tests + 15/15 Overpass integration test (100% match rate)
