@@ -26,6 +26,59 @@
 
 ---
 
+## [May 6 2026] — Sessions 7–8: Issue #6 — Authentication + Onboarding Flow
+
+### Added
+
+- `lib/supabase/auth.ts` — auth helper functions: `signUp`, `signIn`, `signOut`, `resetPassword`, `updatePassword`, `getProfile`, `createProfile`, `updateProfile`, `deleteAccount`, `uploadProfilePhoto`. All functions throw on error; callers translate to plain-English messages
+- `lib/supabase/AuthContext.tsx` — React Context providing `refreshProfile` callback. Used by `onboarding.tsx` to trigger profile resolution and transition to authenticated state after profile creation without requiring a full auth event
+- `types/auth.ts` — `Profile`, `OnboardingStep`, and `AuthState` types. `AuthState` is a discriminated union: `loading | unauthenticated | onboarding | authenticated | recovery`. Re-exports `Session` from Supabase so the rest of the app has a single import path
+- `app/onboarding.tsx` — 3-step multi-step onboarding (name → photo → calorie goal). Dot progress indicator at the top. Photo selection via `expo-image-picker` (optional, skippable). Calorie goal optional. On finish, calls `createProfile` then `refreshProfile` to transition auth state to authenticated
+- `app/(auth)/update-password.tsx` — password recovery screen shown after clicking a recovery email link. Password strength bar + real-time confirm match indicator (same patterns as signup). On success, calls `signOut` and navigates to login
+- `components/ui/AppName.tsx` — styled app name implementing the pun in typography. "my"/"ros" in Bungee at small size in Ketchup Red; "Big"/"MAC" in Bungee at large size in Mustard Gold. Two size presets: `default` (40px/96px) for auth and onboarding screens, `header` (18px/32px) for tab bar headers. Rendered as a row of four `Text` spans aligned on baseline
+- `supabase/migrations/20260505000000_add_delete_user_fn.sql` — `delete_user()` SQL function with `SECURITY DEFINER`. Deletes the calling user's row from `public.profiles` then from `auth.users`. Required because the Supabase anon client cannot delete from `auth.users` without service role privileges; `SECURITY DEFINER` lets the function run with creator privileges
+- `supabase/migrations/20260505000001_make_profile_photos_bucket_public.sql` — sets the `profile-photos` Storage bucket to public. Required for `getPublicUrl()` to return URLs accessible by the `Image` component without auth headers
+- `@react-native-async-storage/async-storage` — installed via `pnpm expo install` for mobile session persistence through Supabase's auth storage adapter
+- `expo-image-picker` — installed via `pnpm expo install` for profile photo selection from camera roll on both mobile and web
+
+### Changed
+
+- `app/_layout.tsx` — full session guard implemented. Subscribes to `onAuthStateChange` on mount; resolves profile and updates `AuthState` on auth events. `useAuthGuard` hook reads current segments and redirects to the correct screen based on auth status. Intercepts `PASSWORD_RECOVERY` to set recovery state. Skips `TOKEN_REFRESHED` and `USER_UPDATED` to prevent premature navigation. `AuthContext.Provider` wraps the tree so `refreshProfile` is available to any screen. Imports `consumePendingRecovery` from `client.ts` to detect recovery flows that fired before the listener registered
+- `app/(auth)/login.tsx` — full implementation replacing scaffold stub. AppName component at top, updated tagline ("Fuel Your Cravings. Hit Your Macros." at 20px, centered), email + password inputs, single error message for all sign-in failures, loading state disabling the button
+- `app/(auth)/signup.tsx` — full implementation. AppName component, real-time email format validation (clears on correction), password strength bar (weak/fair/strong) hidden when confirm field is focused, real-time confirm-password match indicator in green/red, inline confirmation card shown when Supabase email confirmation is enabled
+- `app/(auth)/reset.tsx` — AppName component added, instruction text and error text centered, successCard constrained to 600px max-width on web
+- `app/(auth)/_layout.tsx` — `update-password` screen registered with `headerShown: false` to suppress the default Expo Router route-name header label
+- `app/(tabs)/_layout.tsx` — `headerShown: true` added with `AppName size="header"` as a custom `headerTitle`, `headerTitleAlign: 'center'`, `headerShadowVisible: false`
+- `app/(tabs)/browse.tsx` — all Issue #5 design system placeholder content removed (Button variants, Card, Badge, Input, SkeletonLoader preview). Now an empty dark screen ready for the nutrition browser in a later issue
+- `app/(tabs)/profile.tsx` — full implementation replacing scaffold stub. Profile photo (or initials fallback) with tap-to-edit options (Change Photo / Add Photo / Remove Photo shown inline below avatar). Name and calorie goal fields with inline edit mode and validation. Calorie goal prompt shown when goal is unset. Sign out button. Delete account with two-tap confirmation card (red border, warning copy, irreversible action language)
+- `components/ui/Input.tsx` — web max-width (600px) applied via a wrapping `View` on web rather than `alignSelf` on `TextInput` directly. `alignSelf` was unreliable in deeply nested flex containers. `onFocus`/`onBlur` now composed: internal `focused` state and any external handlers passed as props both run on each event
+- `components/ui/Button.tsx` — 600px max-width constraint applied on web to match input field width
+- `lib/supabase/client.ts` — `AsyncStorage` adapter added for mobile session persistence. `detectSessionInUrl: Platform.OS === 'web'` enables automatic recovery token extraction from URL on web. Module-level `onAuthStateChange` listener added that sets `_pendingRecovery = true` on `PASSWORD_RECOVERY`; `consumePendingRecovery()` exported so `_layout.tsx` can consume the flag during `INITIAL_SESSION` handling
+
+### Fixed
+
+- **Sign-up redirect not working** — `onAuthStateChange` listener was filtering for only `SIGNED_IN` and `TOKEN_REFRESHED` events. After `signUp()`, Supabase fires `INITIAL_SESSION` (not `SIGNED_IN`) when email confirmation is disabled. Removed the event-type filter; any non-null session now proceeds to profile resolution
+- **PASSWORD_RECOVERY timing gap** — Supabase fires `PASSWORD_RECOVERY` during async client initialization, before React's `useEffect` runs and registers the `_layout.tsx` listener. When the listener does register, Supabase only replays `INITIAL_SESSION`, not the original event. Fixed by registering a module-level listener in `client.ts` at import time (runs before React renders) that captures the event in `_pendingRecovery`. The `_layout.tsx` listener consumes that flag on `INITIAL_SESSION` to correctly route to the update-password screen
+- **TOKEN_REFRESHED overwriting recovery state** — after `PASSWORD_RECOVERY` set auth state to `recovery`, Supabase immediately fired `TOKEN_REFRESHED`. Our handler called `resolveProfile` for that event, which set auth state to `authenticated` and navigated to tabs before the user could set a new password. Fixed by making `TOKEN_REFRESHED` a no-op in the handler
+- **USER_UPDATED racing update-password screen navigation** — `supabase.auth.updateUser()` fires `USER_UPDATED` via `onAuthStateChange`. Our handler forwarded it to `resolveProfile` → `authenticated` → tabs navigation, racing the update-password screen's own success path. Fixed by making `USER_UPDATED` a no-op; the screen handles its own post-update navigation
+- **Sign out unreachable on profile screen** — `ScrollView` had `justifyContent: 'center'` with `flexGrow: 1` on `contentContainerStyle`. With a 300px avatar plus fields plus buttons, content exceeded viewport height. The container was fixed at viewport height, clipping the Sign Out button below the fold where it could not be scrolled to. Fixed by removing `justifyContent: 'center'`
+- **Profile photo not displaying** — the `profile-photos` Storage bucket was private. `getPublicUrl()` returned URLs that required auth headers; the `Image` component loaded nothing. Fixed by making the bucket public via SQL `UPDATE`
+- **Old photo persisting after new upload** — uploads use a fixed path (`userId/avatar.jpg`), so the URL returned by `getPublicUrl()` was identical for every upload and the browser served the cached previous image. Fixed by appending `?t={Date.now()}` to the public URL; this cache-busting timestamp is stored in `profile_photo_url` in the database so it persists across sessions
+- **Input max-width not applying in nested flex containers** — `alignSelf: 'center'` on `TextInput` was unreliable when the input was deeply nested inside multiple flex containers (signup, onboarding, profile). Fixed by wrapping `TextInput` in a `View` with the constraint on web, applied uniformly inside the `Input` component's web branch
+- **Password strength bar visible when typing confirm password** — the strength bar remained visible when focus moved to the confirm field, making it appear to belong to the wrong input. Fixed using a `confirmFocused` boolean state that hides the strength bar while the confirm field has focus. Required composing `onFocus`/`onBlur` in `Input` so both internal focus tracking and external handlers both fire
+- **"update-password" route label in screen header** — Expo Router's default Stack header displayed the route name as a visible text label in the top-left. Fixed by registering the screen in `(auth)/_layout.tsx` with `headerShown: false`
+- **Reset screen successCard stretching full width on web** — the "Check your email" confirmation card after requesting a password reset had no max-width constraint. Fixed by adding the standard 600px web constraint to the `successCard` style
+
+### Decisions Made
+
+- **Single error message for all login failures** — login errors always show "The email or password you entered is incorrect. Please try again." regardless of whether the email is unrecognized or the password is wrong. This prevents email enumeration attacks (an attacker probing which email addresses have accounts) and simplifies the UX. Explicitly chosen over the PRD's original spec of distinguishing the two error cases
+- **Onboarding detection via profiles row existence** — no schema change required. A session with no matching row in `profiles` means the user is mid-onboarding. A session with a profiles row means they've completed onboarding. This makes onboarding run exactly once per account with zero additional columns
+- **profile-photos bucket made public** — private bucket would require generating a signed URL on every render, adding latency and complexity. Profile photos are not sensitive content, so public read access is appropriate. The bucket only accepts writes from authenticated users via RLS
+- **Cache-busting timestamp stored in the database URL** — `?t={timestamp}` is stored in `profile_photo_url` in Supabase, not appended at render time. This keeps the stored URL unique per upload permanently and requires no render-time logic. Trade-off: the URL in the database includes the cache-buster suffix
+- **TOKEN_REFRESHED and USER_UPDATED treated as no-ops in auth listener** — token refresh does not change the user's identity or profile. Password update (USER_UPDATED) is handled by the update-password screen's own navigation logic. Calling `resolveProfile` for either event caused race conditions and premature navigation to tabs
+
+---
+
 ## [May 4 2026] — Session 6: Issue #5 — Electric Diner Design System
 
 ### Added
@@ -257,5 +310,5 @@
 
 ---
 
-*Last updated: May 3 2026*
+*Last updated: May 6 2026*
 *Product owner: Mallory Comes*
