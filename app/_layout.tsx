@@ -7,20 +7,24 @@ import {
 } from '@expo-google-fonts/inter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { router, Stack, useSegments } from 'expo-router';
+import { router, Stack, useRootNavigationState, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
+import { Platform, View } from 'react-native';
 import { AuthContext } from '@/lib/supabase/AuthContext';
 import { getProfile } from '@/lib/supabase/auth';
 import { consumePendingRecovery, supabase } from '@/lib/supabase/client';
 import type { AuthState, Session } from '@/types/auth';
+import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 function useAuthGuard(authState: AuthState) {
   const segments = useSegments();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navigationState?.key) return;
     if (authState.status === 'loading') return;
 
     const inAuth = segments[0] === '(auth)';
@@ -37,7 +41,7 @@ function useAuthGuard(authState: AuthState) {
     } else if (authState.status === 'authenticated' && !inTabs) {
       router.replace('/(tabs)/nearby');
     }
-  }, [authState, segments]);
+  }, [authState, segments, navigationState]);
 }
 
 async function resolveProfile(session: Session, setAuthState: (s: AuthState) => void) {
@@ -57,7 +61,7 @@ export default function RootLayout() {
   const [queryClientInstance] = useState(() => new QueryClient());
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
-  const [loaded] = useFonts({
+  const [loaded, fontError] = useFonts({
     Bungee_400Regular,
     Inter_400Regular,
     Inter_600SemiBold,
@@ -89,11 +93,13 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const fontsReady = loaded || !!fontError;
+
   useEffect(() => {
-    if (loaded && authState.status !== 'loading') {
+    if (fontsReady && authState.status !== 'loading') {
       SplashScreen.hideAsync();
     }
-  }, [loaded, authState.status]);
+  }, [fontsReady, authState.status]);
 
   const refreshProfile = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -106,7 +112,10 @@ export default function RootLayout() {
 
   useAuthGuard(authState);
 
-  if (!loaded || authState.status === 'loading') {
+  if (!fontsReady || authState.status === 'loading') {
+    if (Platform.OS === 'web') {
+      return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+    }
     return null;
   }
 
