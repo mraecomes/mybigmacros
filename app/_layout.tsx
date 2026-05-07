@@ -7,14 +7,55 @@ import {
 } from '@expo-google-fonts/inter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { AuthContext } from '@/lib/supabase/AuthContext';
+import { getProfile } from '@/lib/supabase/auth';
+import { consumePendingRecovery, supabase } from '@/lib/supabase/client';
+import type { AuthState, Session } from '@/types/auth';
 
 SplashScreen.preventAutoHideAsync();
 
+function useAuthGuard(authState: AuthState) {
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (authState.status === 'loading') return;
+
+    const inAuth = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === 'onboarding';
+    const inTabs = segments[0] === '(tabs)';
+    const inUpdatePassword = segments[1] === 'update-password';
+
+    if (authState.status === 'unauthenticated' && !inAuth) {
+      router.replace('/(auth)/login');
+    } else if (authState.status === 'recovery' && !inUpdatePassword) {
+      router.replace('/(auth)/update-password');
+    } else if (authState.status === 'onboarding' && !inOnboarding) {
+      router.replace('/onboarding');
+    } else if (authState.status === 'authenticated' && !inTabs) {
+      router.replace('/(tabs)/nearby');
+    }
+  }, [authState, segments]);
+}
+
+async function resolveProfile(session: Session, setAuthState: (s: AuthState) => void) {
+  try {
+    const profile = await getProfile(session.user.id);
+    if (!profile) {
+      setAuthState({ status: 'onboarding', session });
+    } else {
+      setAuthState({ status: 'authenticated', session, profile });
+    }
+  } catch {
+    setAuthState({ status: 'unauthenticated' });
+  }
+}
+
 export default function RootLayout() {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClientInstance] = useState(() => new QueryClient());
+  const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
   const [loaded] = useFonts({
     Bungee_400Regular,
@@ -24,24 +65,63 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (loaded) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!session) {
+          setAuthState({ status: 'unauthenticated' });
+          return;
+        }
+        if (event === 'PASSWORD_RECOVERY') {
+          setAuthState({ status: 'recovery', session });
+          return;
+        }
+        if (event === 'INITIAL_SESSION' && consumePendingRecovery()) {
+          setAuthState({ status: 'recovery', session });
+          return;
+        }
+        if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          return;
+        }
+        await resolveProfile(session, setAuthState);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (loaded && authState.status !== 'loading') {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, authState.status]);
 
-  if (!loaded) {
+  const refreshProfile = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setAuthState({ status: 'unauthenticated' });
+      return;
+    }
+    await resolveProfile(session, setAuthState);
+  }, []);
+
+  useAuthGuard(authState);
+
+  if (!loaded || authState.status === 'loading') {
     return null;
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="restaurant/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="item/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </QueryClientProvider>
+    <AuthContext.Provider value={{ refreshProfile }}>
+      <QueryClientProvider client={queryClientInstance}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          <Stack.Screen name="restaurant/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="item/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </QueryClientProvider>
+    </AuthContext.Provider>
   );
 }
