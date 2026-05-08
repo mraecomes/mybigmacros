@@ -26,6 +26,43 @@
 
 ---
 
+## [May 8 2026] — Issue #8 — Restaurant Locator (Geolocation + Overpass API + Map + List View)
+
+### Added
+
+- `types/restaurant.ts` — LocationCoords, OverpassElement, and RestaurantResult types shared across the locator feature
+- `lib/overpass/nearbyChains.ts` — Overpass API query for amenity=fast_food + amenity=restaurant within a chosen radius. Haversine distance calculation. Two-pass coordinate deduplication (by coordinate before matching; by canonicalName + coordinate after). Parallel matchChainName() calls; unmatched results silently excluded. 15s AbortController timeout with specific error messaging
+- `lib/cache/locationCache.ts` — AsyncStorage read/write for Overpass results. 24hr TTL. Cache key: nearby_{lat.toFixed(3)}_{lng.toFixed(3)}_{radius}. Returns { results, fetchedAt } on cache hit so the banner can show age
+- `components/nearby/RadiusSelector.tsx` — pill button group for 1 / 5 / 10 / 25 mile radius selection. Active pill uses Ketchup Red fill; inactive uses surface background
+- `components/nearby/CachedDataBanner.tsx` — "Showing saved results · Updated Xm ago" banner rendered above the controls bar when serving from cache
+- `components/nearby/LocationFallbackInput.tsx` — standalone zip/city input with Mapbox Geocoding API. Kept in codebase for potential reuse; replaced in nearby.tsx by inline edit mode
+- `components/restaurant/RestaurantCard.tsx` — list card with chain name as text (not initials circle), distance in Ketchup Red, address in secondary color, chevron right
+
+### Changed
+
+- `app/(tabs)/nearby.tsx` — full implementation replacing the Issue #2 stub. Device geolocation on mount (web: navigator.geolocation, native: expo-location). Inline location edit mode: "Change" transforms the location label into a pre-filled TextInput with Save / Cancel inline; auto-opens when geolocation is denied. Responsive split layout (flex 6/4 map/list on ≥768px; stacked with map/list toggle on mobile). Controls bar: radius pills on left, location indicator on right on wide screens. lastFetchRef deduplication guard prevents redundant refetches on identical params. All loading, error, empty, timeout, and no-results states handled with specific copy and a retry button
+- `components/map/MapView.web.tsx` — major rewrite. createPinElement(): 36px Ketchup Red circle with 2-letter initials, white text, drop shadow. createUserLocationElement(): 16px cyan dot with glow. circlePolygon(): 64-step GeoJSON polygon for radius ring rendered as GeoJSON fill + line layers. PinPreviewCard: name, distance, address, Browse Menu button, × dismiss. computeCardPosition(): captures container rect at click time, clamps card horizontally so it never overflows left or right, flips placement above/below pin based on available space — card is always fully visible regardless of pin position
+- `components/map/MapView.native.tsx` — updated to accept full MapViewProps API (pins, userLocation, radiusMiles, onPinClick) for parity with web. Props noted as deferred until EAS Build step; native component renders map and user location dot only
+- `types/map.ts` — MapPin expanded with distanceMiles? and address? fields. MapViewProps expanded with pins?, userLocation?, radiusMiles?, and onPinClick?
+- `package.json` / `pnpm-lock.yaml` — expo-location ~19.0.8 added via pnpm expo install
+
+### Fixed
+
+- **Location edit container shifting left on click** — locationEditContainer had flex: 1, which in a space-between row caused it to expand from the RadiusSelector position rather than staying right-aligned. Fixed by removing flex: 1 and applying a computed inline width (half the list pane width, min 200px on wide screens; full width on narrow)
+- **Browser blue focus ring on location TextInput** — browser default outline overrode the custom border color. Fixed by adding className="outline-none" to suppress the browser ring, and using an editFocused boolean state to apply borderColor: colors.secondary on focus, matching the existing Input.tsx pattern
+- **Pin preview card edge clipping** — card position was computed from pin screen coordinates without knowing the map container bounds, causing cards near the map edge to render partially off-screen. Fixed by capturing containerRect.width and containerRect.height at click time and passing them to computeCardPosition(), which clamps horizontal position and flips vertical placement above/below pin depending on available space
+
+### Decisions Made
+
+- **Chain initials circles on map pins, not logos** — chain logo download deferred until the chains table and Supabase Storage structure are defined. Plan: download ~100 logos via Brandfetch at that point, upload to Supabase Storage, add logo_url to chains table. Initials circles are a functional intentional placeholder
+- **Chain name as text on list cards** — list context benefits from full readable text, not an initials abbreviation. Initials are used only on map pins where space is constrained by the 36px circle
+- **Both amenity=fast_food and amenity=restaurant queried from Overpass** — necessary to include sit-down MenuStat chains (Denny's, IHOP, Applebee's) that OSM tags as amenity=restaurant rather than amenity=fast_food. Removing restaurant would silently drop those chains from all results
+- **Inline edit mode over a separate fallback input section** — clicking "Change" transforms the location label in-place into a pre-filled TextInput with Save/Cancel. Cleaner than expanding a second input section below the controls bar; consistent with the inline editing pattern used on the profile screen
+- **OSM as restaurant location source (known limitation)** — OSM is crowd-sourced and occasionally has stale coordinates or missing address tags for individual locations. Accepted as an MVP tradeoff for a free, no-API-key location source. Address shows "Address unavailable" when OSM tags are missing — never a blank or a zero. Supplement with Mapbox Places API in a later version if needed
+- **"Browse Menu" navigation wired but screen deferred** — tapping Browse Menu in the pin preview card or a restaurant list card calls router.push to /restaurant/[id]. The route does not exist yet; Expo Router falls back to the map tab. Full navigation completes in Issue #9
+
+---
+
 ## [May 7 2026] — Issue #7 — Navigation Structure (Web Top Nav + Mobile Tab Bar)
 
 ### Added
@@ -341,5 +378,5 @@
 
 ---
 
-*Last updated: May 6 2026*
+*Last updated: May 8 2026*
 *Product owner: Mallory Comes*

@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #7 Complete
-**Last Updated:** May 7 2026
-**Last Session:** Issue #7 complete — Navigation structure: web top nav (TopNav.tsx with hamburger collapse at 768px), platform-split tab layout (TopNav on web / native tab bar on mobile). Fixed three web-only bugs: white screen on direct URL nav, two Supabase Navigator Lock cascade errors, and invisible text on browse screen. app.config.ts changed to web.output: 'single' for SPA routing.
-**Next Session Goal:** Issue #8 — Restaurant locator (geolocation + Overpass API + map + list view)
+**Build Phase:** MVP — Issue #8 Complete
+**Last Updated:** May 8 2026
+**Last Session:** Issue #8 complete — Restaurant locator: device geolocation + inline zip/city fallback, Overpass API query (fast_food + restaurant amenities), chain matching via chainMatcher.ts, Mapbox web map with initials pins + user location marker + radius circle, responsive split layout (map 60% / list 40% on ≥768px, stacked on mobile), pin preview card with smart edge-aware repositioning, restaurant list sorted by distance, AsyncStorage caching with 24hr TTL + cached data banner, inline location edit mode with Electric Mint focus ring
+**Next Session Goal:** Issue #9 — Nutrition browser (restaurant menu screen + item detail)
 
 ---
 
@@ -41,10 +41,10 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Onboarding flow (name → photo → calorie goal) | ✅ Complete | 3-step with dot indicator, photo optional, calorie goal optional |
 | User profile screen | ✅ Complete | Inline editing, photo upload/remove with cache-busting, calorie goal prompt, delete account |
 | Navigation (bottom tabs mobile / top nav web) | ✅ Complete | TopNav.tsx (web, hamburger at 768px), platform-split layout, web.output: 'single', Navigator Lock fix via processLock, white-screen loading fix |
-| Restaurant locator — geolocation + zip fallback | ⬜ Not started | |
-| Restaurant locator — Overpass API query | ⬜ Not started | Depends on OSM alias table |
-| Restaurant locator — map view (Mapbox) | ⬜ Not started | Depends on Mapbox compatibility check |
-| Restaurant locator — list view | ⬜ Not started | |
+| Restaurant locator — geolocation + zip fallback | ✅ Complete | Device geolocation on mount (web + native); inline edit mode auto-opens when denied or via "Change" button. Mapbox Geocoding API for address → coords |
+| Restaurant locator — Overpass API query | ✅ Complete | amenity=fast_food + amenity=restaurant within chosen radius (1/5/10/25 mi). Chain matching via chainMatcher.ts; unmatched silently excluded. Two-pass coordinate deduplication |
+| Restaurant locator — map view (Mapbox) | ✅ Complete | dark-v11 style, initials circle pins, cyan user location dot, radius fill + border ring. Pin preview card with smart edge-aware repositioning. Chain logos deferred |
+| Restaurant locator — list view | ✅ Complete | Chain name as text, distance in Ketchup Red, address in secondary, chevron. Sorted by distance ascending. RestaurantCard.tsx |
 | Nutrition browser — restaurant menu screen | ⬜ Not started | Depends on MenuStat import |
 | Nutrition browser — item detail screen | ⬜ Not started | |
 | Missing data display rules | ⬜ Not started | Calories unavailable / "—" for macros |
@@ -54,9 +54,9 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Badge system — Protein Hit | ⬜ Not started | ≥20g protein AND <500 cal, Mustard Gold |
 | Badge system — Fiber Fuel | ⬜ Not started | ≥5g fiber AND <500 cal, Muted Sage Green |
 | Badge tooltips (tap/hover) | ⬜ Not started | |
-| Menu item images — logo + emoji fallback | ⬜ Not started | Never show broken image placeholder |
-| AsyncStorage caching (nutrition + location data) | ⬜ Not started | |
-| "Using cached data" banner | ⬜ Not started | |
+| Menu item images — logo + emoji fallback | ⬜ Not started | Chain logos deferred; see Upcoming Decisions for Brandfetch plan |
+| AsyncStorage caching (nutrition + location data) | 🔄 In progress | Location results cached (24hr TTL, key = lat/lng/radius). Nutrition data caching deferred to Issue #9 |
+| "Using cached data" banner | ✅ Complete | CachedDataBanner.tsx shows "Showing saved results · Updated Xm ago" |
 | Core loop validated on Expo Go (mobile) | ⬜ Not started | |
 | Core loop validated on Expo web (browser) | ⬜ Not started | |
 | Vercel deploy — live portfolio URL | ✅ Complete | mybigmacros.vercel.app — auto-deploys from main |
@@ -132,6 +132,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 | Decision | Needed By | Notes |
 |----------|-----------|-------|
 | Mapbox implementation path (RN SDK vs react-native-maps + style layer) | Pre-build task #1 | Claude Code resolves this first |
+| Chain logos — Brandfetch download | After chains table + Supabase Storage structure defined | Download ~100 logos via Brandfetch, upload to Supabase Storage, add logo_url to chains table. Map pins and restaurant cards currently use initials circles as placeholder |
 | Apple HealthKit integration approach | v1 | Confirm React Native path before building |
 | Cronometer / Lose It! API access | v1 | Treat as stretch goals until access confirmed |
 | Notification email template design | v2 | Should match Electric Diner design direction |
@@ -142,6 +143,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #8 — Restaurant locator: device geolocation (web + native) with inline zip/city fallback, Overpass API (fast_food + restaurant amenities) + chainMatcher.ts pipeline, Mapbox web map (dark-v11, initials pins, user location dot, radius ring), responsive split layout (60/40 wide / stacked narrow), pin preview card with edge-aware repositioning, RestaurantCard list sorted by distance, AsyncStorage 24hr cache + CachedDataBanner, inline location edit with Electric Mint focus ring
 - ✅ Issue #7 — Navigation structure: TopNav.tsx web top nav with hamburger collapse, platform-split tab layout (TopNav on web / native tab bar on mobile), app.config.ts web.output changed to 'single' for SPA routing. Fixed: white screen on direct URL nav (expo-splash-screen is a no-op on web), two Supabase Navigator Lock cascade errors replaced with processLock (in-memory promise-chain lock), invisible text on browse screen (font-face paint delay), font load failure blocking app indefinitely
 - ✅ Issue #6 — Authentication + onboarding flow: Supabase Auth (sign up, sign in, sign out, password reset + recovery, delete account), 3-step onboarding, full Profile screen with inline editing + photo upload, root layout session guard with AuthState discriminated union, AppName pun component, Input/Button 600px web constraints, password strength bar, real-time match indicator
 - ✅ Issue #5 — Electric Diner design system: typography/spacing/radii tokens in theme.ts, Bungee + Inter fonts loaded, tailwind.config.js extended, 5 UI primitives (Button, Card, Badge, Input, SkeletonLoader) verified on Expo web
@@ -169,5 +171,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: May 6 2026*
+*Last updated: May 8 2026*
 *Product owner: Mallory Comes*
