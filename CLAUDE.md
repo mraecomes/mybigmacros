@@ -178,6 +178,21 @@ create table osm_aliases (
 );
 ```
 
+### chains
+One row per fast food chain. Stores the Supabase Storage logo URL and the chain's primary food category (used for emoji fallback when no logo is available). Populated by the one-time Brandfetch download script in `scripts/`.
+
+> `chain_name` must match `chain_name` in `menu_items` exactly. Do not enforce a foreign key constraint between `chains` and `menu_items` — `menu_items` is a static import table that cannot be altered. This is intentional.
+
+```sql
+create table chains (
+  id uuid primary key default gen_random_uuid(),
+  chain_name text not null unique,
+  primary_category text,
+  logo_url text,
+  created_at timestamptz default now()
+);
+```
+
 ### Row Level Security (RLS)
 
 ```sql
@@ -202,6 +217,13 @@ alter table osm_aliases enable row level security;
 
 create policy "Public read access for osm_aliases"
   on osm_aliases for select
+  using (true);
+
+-- chains: same as menu_items and osm_aliases — public read, no user data
+alter table chains enable row level security;
+
+create policy "Public read access for chains"
+  on chains for select
   using (true);
 ```
 
@@ -336,7 +358,10 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN=
 EXPO_PUBLIC_APP_URL=
+BRANDFETCH_API_KEY=
 ```
+
+> `BRANDFETCH_API_KEY` is used only by the chain logo download script in `scripts/`. Never used in app client code.
 
 **`.gitignore` — required contents:**
 
