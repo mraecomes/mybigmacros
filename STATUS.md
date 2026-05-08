@@ -55,6 +55,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Badge system — Fiber Fuel | ⬜ Not started | ≥5g fiber AND <500 cal, Muted Sage Green |
 | Badge tooltips (tap/hover) | ⬜ Not started | |
 | Menu item images — logo + emoji fallback | ⬜ Not started | Chain logos deferred; see Upcoming Decisions for Brandfetch plan |
+| Chain logos (Brandfetch + Supabase Storage + logo display) | ⬜ Not started | Issue #13 — chains table, primary_category fallback logic, download script, wire into map pins + RestaurantCard + menu screen header |
 | AsyncStorage caching (nutrition + location data) | 🔄 In progress | Location results cached (24hr TTL, key = lat/lng/radius). Nutrition data caching deferred to Issue #9 |
 | "Using cached data" banner | ✅ Complete | CachedDataBanner.tsx shows "Showing saved results · Updated Xm ago" |
 | Core loop validated on Expo Go (mobile) | ⬜ Not started | |
@@ -132,7 +133,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 | Decision | Needed By | Notes |
 |----------|-----------|-------|
 | Mapbox implementation path (RN SDK vs react-native-maps + style layer) | Pre-build task #1 | Claude Code resolves this first |
-| Chain logos — Brandfetch download | After chains table + Supabase Storage structure defined | Download ~100 logos via Brandfetch, upload to Supabase Storage, add logo_url to chains table. Map pins and restaurant cards currently use initials circles as placeholder |
+| Chain logos | Issue #13 | Scoped and created — chains table, Brandfetch download script, logo wire-in across all surfaces |
 | Apple HealthKit integration approach | v1 | Confirm React Native path before building |
 | Cronometer / Lose It! API access | v1 | Treat as stretch goals until access confirmed |
 | Notification email template design | v2 | Should match Electric Diner design direction |
