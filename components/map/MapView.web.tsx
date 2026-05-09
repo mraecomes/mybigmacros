@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { router } from 'expo-router';
 import type { MapViewProps, MapPin } from '@/types/map';
 
 const MILES_TO_METERS = 1609.344;
@@ -250,7 +251,10 @@ export default function WebMapView({
           containerWidth={activePreview.containerWidth}
           containerHeight={activePreview.containerHeight}
           onBrowseMenu={() => {
-            onPinClick?.(activePreview.pin);
+            const { canonicalName } = activePreview.pin;
+            if (canonicalName) {
+              router.push(`/restaurant/${encodeURIComponent(canonicalName)}`);
+            }
             setActivePreview(null);
           }}
           onDismiss={() => setActivePreview(null)}

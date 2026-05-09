@@ -125,6 +125,12 @@ const COLUMN_MAP = {
   'serving size (g)': 'serving_size',
   'portion size': 'serving_size',
 
+  // Serving size unit
+  'serving size unit': 'serving_size_unit',
+  'serving_size_unit': 'serving_size_unit',
+  'serving unit': 'serving_size_unit',
+  'size unit': 'serving_size_unit',
+
   // Notes
   'notes': 'notes',
   'note': 'notes',
@@ -175,7 +181,7 @@ function inspect() {
 
     const { mapping, unmapped } = mapHeaders(headers);
     process.stdout.write(`\n  Schema columns mapped:\n`);
-    const SCHEMA_COLS = ['chain_name', 'item_name', 'category', 'calories', 'protein_g', 'fat_g', 'carbs_g', 'fiber_g', 'sodium_mg', 'serving_size'];
+    const SCHEMA_COLS = ['chain_name', 'item_name', 'category', 'calories', 'protein_g', 'fat_g', 'carbs_g', 'fiber_g', 'sodium_mg', 'serving_size', 'serving_size_unit'];
     SCHEMA_COLS.forEach(col => {
       if (mapping[col] !== undefined) {
         process.stdout.write(`    ✅ ${col} ← col[${mapping[col]}] "${headers[mapping[col]]}"\n`);
@@ -236,7 +242,7 @@ function run() {
     process.exit(1);
   }
 
-  const OUTPUT_COLS = ['chain_name', 'item_name', 'category', 'calories', 'protein_g', 'fat_g', 'carbs_g', 'fiber_g', 'sodium_mg', 'serving_size', 'notes'];
+  const OUTPUT_COLS = ['chain_name', 'item_name', 'category', 'calories', 'protein_g', 'fat_g', 'carbs_g', 'fiber_g', 'sodium_mg', 'serving_size', 'serving_size_unit', 'notes'];
   const NUMERIC_COLS = new Set(['calories', 'protein_g', 'fat_g', 'carbs_g', 'fiber_g', 'sodium_mg']);
 
   const counters = {
@@ -278,6 +284,7 @@ function run() {
       fiber_g: mapping['fiber_g'] !== undefined ? parseNumeric(row[mapping['fiber_g']]) : null,
       sodium_mg: mapping['sodium_mg'] !== undefined ? parseNumeric(row[mapping['sodium_mg']]) : null,
       serving_size: mapping['serving_size'] !== undefined ? normalizeText(row[mapping['serving_size']]) : null,
+      serving_size_unit: mapping['serving_size_unit'] !== undefined ? normalizeText(row[mapping['serving_size_unit']]) : null,
       notes: null,
     };
 

@@ -11,27 +11,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// On web, Supabase defaults to the Navigator Locks API for cross-tab auth
-// synchronization. This causes lock-steal cascades when multiple async auth
-// operations (INITIAL_SESSION, auto-refresh, getSession) race on page load.
-// This app runs in a single process with no cross-tab coordination requirement,
-// so we replace it with an in-memory promise-chain lock on web.
-const pendingLocks: Record<string, Promise<unknown>> = {};
-function processLock<T>(
-  name: string,
-  _acquireTimeout: number,
-  fn: () => Promise<T>
-): Promise<T> {
-  const previous = (pendingLocks[name] ?? Promise.resolve()) as Promise<unknown>;
-  const current = previous.then(() => fn(), () => fn());
-  pendingLocks[name] = current.then(() => undefined, () => undefined);
-  return current;
-}
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     ...(Platform.OS !== 'web' && { storage: AsyncStorage }),
-    ...(Platform.OS === 'web' && { lock: processLock }),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',

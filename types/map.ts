@@ -3,6 +3,7 @@ export type MapPin = {
   latitude: number;
   longitude: number;
   label: string;
+  canonicalName?: string;
   distanceMiles?: number;
   address?: string;
 };
