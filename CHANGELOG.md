@@ -26,6 +26,37 @@
 
 ---
 
+## [May 9 2026] — Issue #9 — Nutrition Browser (Restaurant Menu Screen + Item Detail Screen)
+
+### Added
+
+- `app/restaurant/[id].tsx` — restaurant menu screen. Fetches all menu items for the tapped chain from Supabase (`fetchMenuItems`). SectionList with sticky category headers, sorted in insertion order from the database. `MenuSearchHeader` (React.memo, top-level definition) renders a search bar that filters visible sections by item name. Item count in header shows "X of Y items" when a filter is active. AsyncStorage 24hr cache via `getCachedMenuItems` / `setCachedMenuItems`; CachedDataBanner shown when serving from cache. Skeleton loading (8 rows), error state with retry, empty-menu state, no-results state for search. Back button navigates to previous screen
+- `app/item/[id].tsx` — item detail screen. Displays full nutrition panel: calories (large display, "Calories unavailable" when null), protein, fat, carbs, fiber, sodium, serving size. Missing macros show "—" (never 0). Protein Hit badge (≥20g protein AND <500 cal, Mustard Gold) and Fiber Fuel badge (≥5g fiber AND <500 cal, Muted Sage Green) displayed below the item name when criteria are met; ineligible when the relevant macro is null. Back navigation
+- `lib/supabase/menuItems.ts` — `fetchMenuItems(chainName: string): Promise<MenuItem[]>`. Queries `menu_items` table filtered by `chain_name` with case-insensitive exact match. Returns all columns; throws on Supabase error
+- `lib/cache/menuCache.ts` — `getCachedMenuItems(chainName)` / `setCachedMenuItems(chainName, items)`. AsyncStorage read/write. 24hr TTL. Cache key: `menu_{chainName}`. Returns `{ items, fetchedAt }` on hit for CachedDataBanner age display
+
+### Changed
+
+- `lib/supabase/client.ts` — removed `pendingLocks` Record and entire `processLock` function (~35 lines). Removed `lock: processLock` from `createClient` auth options. Supabase now uses its own `navigatorLock` on web, which includes steal-recovery (steal after 5s timeout, refuses to steal back to prevent cascades). `consumePendingRecovery()` and `_pendingRecovery` hash detection unchanged
+- `app/_layout.tsx` — (1) split combined `TOKEN_REFRESHED || USER_UPDATED` handler into two separate handlers: `TOKEN_REFRESHED` uses a functional `setAuthState` updater that updates the session only when already authenticated or in recovery — prevents calling `resolveProfile` on token refresh and avoids a race condition where a fresh profile fetch could overwrite in-flight auth state; `USER_UPDATED` remains a no-op. (2) Added `visibilitychange` `useEffect` (web only): calls `supabase.auth.getSession()` when tab regains focus; if session is null, sets auth state to unauthenticated. Guards against expired sessions that went undetected while the tab was backgrounded. (3) QueryClient instantiated with `defaultOptions: { queries: { refetchOnWindowFocus: true } }` so TanStack Query hooks automatically refetch on tab focus
+- `app/(tabs)/profile.tsx` — (1) `loadProfile` converted to `useCallback`; `useFocusEffect` wraps it so profile reloads on every navigation focus. (2) Added `visibilitychange` `useEffect` (web only) with `[loadProfile]` dependency — triggers `loadProfile()` on browser tab focus, matching the layout's session recovery pattern. (3) Error state: when profile is null after load completes, shows "Could not load profile." with a "Try again" `Pressable` button instead of a blank screen
+
+### Fixed
+
+- **Idle-session deadlock (permanent loading spinner after 20+ min idle on web)** — root cause: the custom `processLock` (Issue #7) only intercepts `GoTrueClient._acquireLock()` Path B (when no lock is currently held). When the app idles and `autoRefreshToken` fires, the GoTrue client is already inside a lock (`lockAcquired = true`), so it queues via Path A (`pendingInLock`), bypassing the external lock and any timeout entirely. The operation completes without releasing `pendingInLock`, leaving the next operation permanently queued. Fix: remove `processLock` entirely and let Supabase default to `navigatorLock` on web. `navigatorLock` (auth-js v2.105.1) includes its own steal-recovery: steals an orphaned lock after 5s, and refuses a steal-back to prevent cascades. The scenario that caused the deadlock (`pendingInLock`) never involves the external lock, so no external lock implementation can fix it — only removing the custom lock resolves it
+- **Search field losing focus when query returns no results** — two separate issues. First: `MenuSearchHeader` was defined as an arrow function inside `RestaurantScreen`; a new function reference on each render caused `SectionList`'s `ListHeaderComponent` to unmount and remount the input, dropping focus. Fixed by defining `MenuSearchHeader` as a top-level `React.memo` component with stable type identity. Second: `searchHeader` was rendered in two different tree positions (inside SectionList's `ListHeaderComponent` when results exist, and again in a sibling fragment for the no-results empty state); React treats different tree positions as different components and remounts. Fixed by rendering `searchHeader` at a single fixed position in the root View, always above `renderContent()`, conditioned only on `items.length > 0` (stable during typing). `renderContent()` no longer contains the search bar at any path
+- **Profile screen blank on session errors** — if `getSession()` returned null or the Supabase query threw, `loadProfile` left `profile` as null and `loadingProfile` as false, rendering an empty screen with no affordance. Fixed by adding an explicit error state with "Could not load profile." text and a retry button
+- **TanStack Query hooks not refetching on tab focus** — `QueryClient` was instantiated with no options, leaving the default `refetchOnWindowFocus: false`. Any screen using `useQuery` hooks would serve stale data after the tab was backgrounded and returned. Fixed by passing `defaultOptions: { queries: { refetchOnWindowFocus: true } }` to the QueryClient constructor in `_layout.tsx`
+
+### Decisions Made
+
+- **Remove processLock entirely rather than patch it** — the idle-session deadlock originates in Path A of `GoTrueClient._acquireLock()`, which runs entirely inside the GoTrue client and never calls the external lock function. No amount of timeout logic in `processLock` can intercept this path. The only correct fix is to let Supabase manage its own locking. Supabase's `navigatorLock` (the web default) is more capable than the custom implementation: it handles cross-tab coordination (not needed here, but harmless) and includes tested steal-recovery logic. The original reason for `processLock` (preventing Navigator Lock cascade errors on page load — Issue #7) is handled by `navigatorLock`'s steal-recovery, not by removing the lock
+- **Fixed tree position for MenuSearchHeader** — the standard React pattern of passing a component as `ListHeaderComponent` causes remount whenever the parent re-renders with a new function reference. Memoization of the element (not just the component) plus a single fixed render slot is the only reliable way to keep a TextInput mounted and focused across parent state changes. This pattern applies to any focusable element near a dynamically-sized list
+- **visibilitychange as session recovery signal** — `useFocusEffect` fires on Expo Router navigation focus, not on browser-tab focus. On web, a user switching away from the app tab and returning will not trigger `useFocusEffect`. `visibilitychange` fills this gap: it fires on tab restoration and is the correct browser primitive for "user returned to this tab" detection. Two separate instances: one in `_layout.tsx` (checks session validity) and one in `profile.tsx` (reloads profile data)
+- **Functional updater for TOKEN_REFRESHED** — using `setAuthState(prev => ...)` instead of reading `authState` directly avoids a stale closure: the handler captures `authState` at registration time (always `{ status: 'loading' }`), so a direct reference would always produce the wrong result. The functional updater reads the current state at call time, making the update correct regardless of when the token refresh fires
+
+---
+
 ## [May 8 2026] — Issue #8 — Restaurant Locator (Geolocation + Overpass API + Map + List View)
 
 ### Added
@@ -378,5 +409,5 @@
 
 ---
 
-*Last updated: May 8 2026*
+*Last updated: May 9 2026*
 *Product owner: Mallory Comes*

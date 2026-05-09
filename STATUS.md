@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #8 Complete
-**Last Updated:** May 8 2026
-**Last Session:** Issue #8 complete — Restaurant locator: device geolocation + inline zip/city fallback, Overpass API query (fast_food + restaurant amenities), chain matching via chainMatcher.ts, Mapbox web map with initials pins + user location marker + radius circle, responsive split layout (map 60% / list 40% on ≥768px, stacked on mobile), pin preview card with smart edge-aware repositioning, restaurant list sorted by distance, AsyncStorage caching with 24hr TTL + cached data banner, inline location edit mode with Electric Mint focus ring
-**Next Session Goal:** Issue #9 — Nutrition browser (restaurant menu screen + item detail)
+**Build Phase:** MVP — Issue #9 Complete
+**Last Updated:** May 9 2026
+**Last Session:** Issue #9 complete — Restaurant menu screen (app/restaurant/[id].tsx): SectionList with category headers, search bar with stable focus (MenuSearchHeader as top-level React.memo, fixed tree position outside SectionList), item count display, skeleton loading, error + retry, empty state, AsyncStorage 24hr cache + CachedDataBanner. Item detail screen (app/item/[id].tsx): full nutrition panel with missing data rules ("Calories unavailable" / "—" for macros), Protein Hit + Fiber Fuel badge display, serving size. Bug fixes: processLock removed and replaced with Supabase's own navigatorLock (idle-session deadlock fix), TOKEN_REFRESHED functional updater (no resolveProfile race), visibilitychange listeners on web (layout.tsx + profile.tsx), Profile screen error state + retry button, QueryClient defaultOptions.
+**Next Session Goal:** Issue #10 — Macro-Meter visualization (React Native SVG)
 
 ---
 
@@ -40,14 +40,14 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Authentication — delete account | ✅ Complete | Two-tap confirm card, delete_user() RPC with SECURITY DEFINER |
 | Onboarding flow (name → photo → calorie goal) | ✅ Complete | 3-step with dot indicator, photo optional, calorie goal optional |
 | User profile screen | ✅ Complete | Inline editing, photo upload/remove with cache-busting, calorie goal prompt, delete account |
-| Navigation (bottom tabs mobile / top nav web) | ✅ Complete | TopNav.tsx (web, hamburger at 768px), platform-split layout, web.output: 'single', Navigator Lock fix via processLock, white-screen loading fix |
+| Navigation (bottom tabs mobile / top nav web) | ✅ Complete | TopNav.tsx (web, hamburger at 768px), platform-split layout, web.output: 'single', white-screen loading fix. processLock removed (Issue #9) — Supabase navigatorLock handles web locking with steal-recovery |
 | Restaurant locator — geolocation + zip fallback | ✅ Complete | Device geolocation on mount (web + native); inline edit mode auto-opens when denied or via "Change" button. Mapbox Geocoding API for address → coords |
 | Restaurant locator — Overpass API query | ✅ Complete | amenity=fast_food + amenity=restaurant within chosen radius (1/5/10/25 mi). Chain matching via chainMatcher.ts; unmatched silently excluded. Two-pass coordinate deduplication |
 | Restaurant locator — map view (Mapbox) | ✅ Complete | dark-v11 style, initials circle pins, cyan user location dot, radius fill + border ring. Pin preview card with smart edge-aware repositioning. Chain logos deferred |
 | Restaurant locator — list view | ✅ Complete | Chain name as text, distance in Ketchup Red, address in secondary, chevron. Sorted by distance ascending. RestaurantCard.tsx |
-| Nutrition browser — restaurant menu screen | ⬜ Not started | Depends on MenuStat import |
-| Nutrition browser — item detail screen | ⬜ Not started | |
-| Missing data display rules | ⬜ Not started | Calories unavailable / "—" for macros |
+| Nutrition browser — restaurant menu screen | ✅ Complete | SectionList by category, search with stable focus (React.memo + fixed tree), skeleton, error, empty state, 24hr cache |
+| Nutrition browser — item detail screen | ✅ Complete | Full nutrition panel, serving size, badge display, back navigation |
+| Missing data display rules | ✅ Complete | "Calories unavailable" when null, "—" for all missing macros. Badge ineligibility for missing protein/fiber |
 | Macro-Meter visualization (React Native SVG) | ⬜ Not started | Item detail screen |
 | Calorie filter — input + results screen | ⬜ Not started | |
 | Calorie filter — "Just over your limit" section | ⬜ Not started | |
@@ -56,7 +56,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Badge tooltips (tap/hover) | ⬜ Not started | |
 | Menu item images — logo + emoji fallback | ⬜ Not started | Chain logos deferred; see Upcoming Decisions for Brandfetch plan |
 | Chain logos (Brandfetch + Supabase Storage + logo display) | ⬜ Not started | Issue #13 — chains table, primary_category fallback logic, download script, wire into map pins + RestaurantCard + menu screen header |
-| AsyncStorage caching (nutrition + location data) | 🔄 In progress | Location results cached (24hr TTL, key = lat/lng/radius). Nutrition data caching deferred to Issue #9 |
+| AsyncStorage caching (nutrition + location data) | ✅ Complete | Location results cached (24hr TTL, key = lat/lng/radius). Menu items cached (24hr TTL, key = chain name). Both show CachedDataBanner |
 | "Using cached data" banner | ✅ Complete | CachedDataBanner.tsx shows "Showing saved results · Updated Xm ago" |
 | Core loop validated on Expo Go (mobile) | ⬜ Not started | |
 | Core loop validated on Expo web (browser) | ⬜ Not started | |
@@ -144,6 +144,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- ✅ Issue #9 — Nutrition browser: restaurant menu screen (SectionList by category, search with stable React.memo focus, skeleton/error/empty states, AsyncStorage 24hr cache + CachedDataBanner), item detail screen (full nutrition panel, missing data rules, badge display), processLock removed and replaced with Supabase navigatorLock (idle-session deadlock fix), TOKEN_REFRESHED functional updater, visibilitychange listeners (layout + profile), Profile screen error state + retry button, QueryClient defaultOptions
 - ✅ Issue #8 — Restaurant locator: device geolocation (web + native) with inline zip/city fallback, Overpass API (fast_food + restaurant amenities) + chainMatcher.ts pipeline, Mapbox web map (dark-v11, initials pins, user location dot, radius ring), responsive split layout (60/40 wide / stacked narrow), pin preview card with edge-aware repositioning, RestaurantCard list sorted by distance, AsyncStorage 24hr cache + CachedDataBanner, inline location edit with Electric Mint focus ring
 - ✅ Issue #7 — Navigation structure: TopNav.tsx web top nav with hamburger collapse, platform-split tab layout (TopNav on web / native tab bar on mobile), app.config.ts web.output changed to 'single' for SPA routing. Fixed: white screen on direct URL nav (expo-splash-screen is a no-op on web), two Supabase Navigator Lock cascade errors replaced with processLock (in-memory promise-chain lock), invisible text on browse screen (font-face paint delay), font load failure blocking app indefinitely
 - ✅ Issue #6 — Authentication + onboarding flow: Supabase Auth (sign up, sign in, sign out, password reset + recovery, delete account), 3-step onboarding, full Profile screen with inline editing + photo upload, root layout session guard with AuthState discriminated union, AppName pun component, Input/Button 600px web constraints, password strength bar, real-time match indicator
@@ -172,5 +173,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: May 8 2026*
+*Last updated: May 9 2026*
 *Product owner: Mallory Comes*
