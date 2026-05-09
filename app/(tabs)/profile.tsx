@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { Profile } from '@/types/auth';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -33,28 +33,37 @@ export default function ProfileScreen() {
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      async function load() {
-        setLoadingProfile(true);
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          setProfile(data);
-        } catch {
-          // Profile load failure is surfaced by empty state
-        } finally {
-          setLoadingProfile(false);
-        }
-      }
-      load();
-    }, [])
-  );
+  const loadProfile = useCallback(async () => {
+    setLoadingProfile(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      setProfile(data);
+    } catch {
+      // Profile load failure is surfaced by empty state + retry button
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadProfile(); }, [loadProfile]));
+
+  // Re-run the profile load when the browser tab regains focus.
+  // useFocusEffect only fires on navigation focus, not on browser-tab focus,
+  // so without this a user returning to an idle tab sees stale or missing data.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') loadProfile();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [loadProfile]);
 
   function startEdit(field: EditField) {
     setFieldError('');
@@ -172,6 +181,12 @@ export default function ProfileScreen() {
     return (
       <View style={styles.centered}>
         <Text style={styles.emptyText}>Could not load profile.</Text>
+        <Pressable
+          onPress={loadProfile}
+          style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={styles.retryText}>Try again</Text>
+        </Pressable>
       </View>
     );
   }
@@ -334,6 +349,18 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
+  },
+  retryBtn: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radii.sm,
+  },
+  retryText: {
+    fontFamily: typography.fontFamily.bodySemiBold,
+    fontSize: typography.fontSize.base,
+    color: colors.textPrimary,
   },
   scroll: {
     flexGrow: 1,

@@ -35,17 +35,25 @@ async function geocodeQuery(
 ): Promise<{ latitude: number; longitude: number; placeName: string } | null> {
   const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN ?? '';
   const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?types=postcode,place,address&limit=1&access_token=${token}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Geocoding service unavailable');
-  const json = await res.json();
-  const feature = json.features?.[0];
-  if (!feature) return null;
-  const [longitude, latitude] = feature.center as [number, number];
-  return {
-    latitude,
-    longitude,
-    placeName: (feature.place_name ?? feature.text ?? query) as string,
-  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error('Geocoding service unavailable');
+    const json = await res.json();
+    const feature = json.features?.[0];
+    if (!feature) return null;
+    const [longitude, latitude] = feature.center as [number, number];
+    return {
+      latitude,
+      longitude,
+      placeName: (feature.place_name ?? feature.text ?? query) as string,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export default function NearbyScreen() {
@@ -201,9 +209,7 @@ export default function NearbyScreen() {
   }
 
   function navigateToRestaurant(restaurant: RestaurantResult) {
-    router.push(
-      `/restaurant/${encodeURIComponent(restaurant.canonicalName)}?osmId=${restaurant.osmId}` as Parameters<typeof router.push>[0]
-    );
+    router.push(`/restaurant/${encodeURIComponent(restaurant.canonicalName)}`);
   }
 
   const mapPins: MapPin[] = restaurants.map((r) => ({
@@ -211,6 +217,7 @@ export default function NearbyScreen() {
     latitude: r.latitude,
     longitude: r.longitude,
     label: r.canonicalName,
+    canonicalName: r.canonicalName,
     distanceMiles: r.distanceMiles,
     address: r.address,
   }));
@@ -415,7 +422,6 @@ export default function NearbyScreen() {
             displayName={item.displayName}
             distanceMiles={item.distanceMiles}
             address={item.address}
-            onPress={() => navigateToRestaurant(item)}
           />
         )}
         showsVerticalScrollIndicator={false}

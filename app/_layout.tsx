@@ -30,6 +30,7 @@ function useAuthGuard(authState: AuthState) {
     const inAuth = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
     const inTabs = segments[0] === '(tabs)';
+    const inAuthenticatedRoute = inTabs || segments[0] === 'restaurant' || segments[0] === 'item';
     const inUpdatePassword = segments[1] === 'update-password';
 
     if (authState.status === 'unauthenticated' && !inAuth) {
@@ -38,7 +39,7 @@ function useAuthGuard(authState: AuthState) {
       router.replace('/(auth)/update-password');
     } else if (authState.status === 'onboarding' && !inOnboarding) {
       router.replace('/onboarding');
-    } else if (authState.status === 'authenticated' && !inTabs) {
+    } else if (authState.status === 'authenticated' && !inAuthenticatedRoute) {
       router.replace('/(tabs)/nearby');
     }
   }, [authState, segments, navigationState]);
@@ -58,7 +59,9 @@ async function resolveProfile(session: Session, setAuthState: (s: AuthState) => 
 }
 
 export default function RootLayout() {
-  const [queryClientInstance] = useState(() => new QueryClient());
+  const [queryClientInstance] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true } } })
+  );
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
   const [loaded, fontError] = useFonts({
@@ -83,7 +86,16 @@ export default function RootLayout() {
           setAuthState({ status: 'recovery', session });
           return;
         }
-        if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (event === 'TOKEN_REFRESHED') {
+          setAuthState(prev => {
+            if (prev.status === 'authenticated' || prev.status === 'recovery') {
+              return { ...prev, session };
+            }
+            return prev;
+          });
+          return;
+        }
+        if (event === 'USER_UPDATED') {
           return;
         }
         await resolveProfile(session, setAuthState);
@@ -91,6 +103,25 @@ export default function RootLayout() {
     );
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // On web, verify the session is still valid whenever the tab regains focus.
+  // If the session expired while the app was backgrounded and getSession() returns
+  // null, redirect to login. This check is independent of TOKEN_REFRESHED handling.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    function handleVisibilityChange() {
+      if (document.visibilityState !== 'visible') return;
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) setAuthState({ status: 'unauthenticated' });
+      }).catch(() => {
+        // getSession failed transiently — leave auth state as-is
+      });
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   const fontsReady = loaded || !!fontError;

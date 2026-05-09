@@ -1,5 +1,6 @@
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type Props = {
@@ -7,7 +8,7 @@ type Props = {
   displayName: string;
   distanceMiles: number;
   address: string;
-  onPress: () => void;
+  onPress?: () => void;
 };
 
 export function RestaurantCard({
@@ -17,17 +18,38 @@ export function RestaurantCard({
   address,
   onPress,
 }: Props) {
+  const isTappable = !!canonicalName;
+
   const distance =
     distanceMiles < 0.1
       ? '< 0.1 mi'
       : `${distanceMiles.toFixed(1)} mi`;
 
+  function handlePress() {
+    if (!isTappable) return;
+    if (onPress) {
+      onPress();
+    } else {
+      router.push(`/restaurant/${encodeURIComponent(canonicalName)}`);
+    }
+  }
+
   return (
     <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={handlePress}
+      disabled={!isTappable}
+      style={({ pressed }) => [
+        styles.card,
+        pressed && isTappable && styles.cardPressed,
+        !isTappable && styles.cardDisabled,
+      ]}
       accessibilityRole="button"
-      accessibilityLabel={`${displayName}, ${distance} away. Tap to browse menu.`}
+      accessibilityLabel={
+        isTappable
+          ? `${displayName}, ${distance} away. Tap to browse menu.`
+          : `${displayName}, ${distance} away. Menu not available.`
+      }
+      accessibilityState={{ disabled: !isTappable }}
     >
       <View style={styles.content}>
         <View style={styles.nameRow}>
@@ -40,7 +62,9 @@ export function RestaurantCard({
           {address}
         </Text>
       </View>
-      <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
+      {isTappable && (
+        <FontAwesome name="chevron-right" size={14} color={colors.textSecondary} />
+      )}
     </Pressable>
   );
 }
@@ -58,6 +82,9 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     backgroundColor: colors.background,
+  },
+  cardDisabled: {
+    opacity: 0.4,
   },
   content: {
     flex: 1,
