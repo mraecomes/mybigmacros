@@ -1,9 +1,26 @@
-import { matchChainName } from '@/lib/matching/chainMatcher';
+import Fuse, { type IFuseOptions } from 'fuse.js';
 import type { LocationCoords, OverpassElement, RestaurantResult } from '@/types/restaurant';
 
 const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
 const MILES_TO_METERS = 1609.344;
 const TIMEOUT_MS = 15_000;
+
+// Same options as chainMatcher.ts — keep in sync if threshold changes
+const FUSE_OPTIONS: IFuseOptions<string> = {
+  threshold: 0.3,
+  distance: 100,
+  includeScore: true,
+  minMatchCharLength: 2,
+  ignoreLocation: true,
+};
+
+let fuseIndexCache: Fuse<string> | null = null;
+
+function getFuseIndex(names: string[]): Fuse<string> {
+  if (fuseIndexCache !== null) return fuseIndexCache;
+  fuseIndexCache = new Fuse(names, FUSE_OPTIONS);
+  return fuseIndexCache;
+}
 
 function buildOverpassQuery(lat: number, lon: number, radiusM: number): string {
   return `[out:json][timeout:15];
@@ -53,7 +70,9 @@ function coordKey(lat: number, lon: number): string {
  */
 export async function fetchNearbyChains(
   coords: LocationCoords,
-  radiusMiles: number
+  radiusMiles: number,
+  aliasMap: Map<string, string>,
+  canonicalNames: string[]
 ): Promise<RestaurantResult[]> {
   const radiusM = Math.round(radiusMiles * MILES_TO_METERS);
   const query = buildOverpassQuery(coords.latitude, coords.longitude, radiusM);
@@ -92,31 +111,58 @@ export async function fetchNearbyChains(
     }
   }
 
-  // Match each element in parallel — unmatched ones are silently excluded
-  const matchResults = await Promise.all(
-    unique.map(async (el) => {
-      const tags = el.tags ?? {};
-      const lat = el.lat ?? el.center!.lat;
-      const lon = el.lon ?? el.center!.lon;
+  // Resolve the OSM name for an element — same priority as matchChainName: brand > name:en > name
+  function osmNameFor(el: OverpassElement): string | undefined {
+    const tags = el.tags ?? {};
+    const name = (tags['brand'] ?? tags['name:en'] ?? tags['name'])?.trim();
+    return name || undefined;
+  }
 
-      const match = await matchChainName({
-        brand: tags['brand'] ?? tags['name:en'],
-        name: tags['name'],
-      });
+  const fuse = getFuseIndex(canonicalNames);
 
-      if (!match) return null;
+  // Match each element in memory — no per-element Supabase calls
+  const matchResults = unique.map((el) => {
+    const tags = el.tags ?? {};
+    const lat = el.lat ?? el.center!.lat;
+    const lon = el.lon ?? el.center!.lon;
+    const osmName = osmNameFor(el);
 
+    if (!osmName) return null;
+
+    // Step 1: exact alias lookup (in-memory)
+    const canonical = aliasMap.get(osmName);
+    if (canonical) {
       return {
         osmId: el.id,
-        canonicalName: match.canonical,
-        displayName: tags['name'] ?? match.canonical,
+        canonicalName: canonical,
+        displayName: tags['name'] ?? canonical,
         latitude: lat,
         longitude: lon,
         address: buildAddress(tags),
         distanceMiles: haversineMiles(coords.latitude, coords.longitude, lat, lon),
       } satisfies RestaurantResult;
-    })
-  );
+    }
+
+    // Step 2: fuzzy match (in-memory)
+    const fuseResults = fuse.search(osmName);
+    if (
+      fuseResults.length === 0 ||
+      fuseResults[0].score === undefined ||
+      fuseResults[0].score > FUSE_OPTIONS.threshold!
+    ) {
+      return null;
+    }
+
+    return {
+      osmId: el.id,
+      canonicalName: fuseResults[0].item,
+      displayName: tags['name'] ?? fuseResults[0].item,
+      latitude: lat,
+      longitude: lon,
+      address: buildAddress(tags),
+      distanceMiles: haversineMiles(coords.latitude, coords.longitude, lat, lon),
+    } satisfies RestaurantResult;
+  });
 
   const matched = matchResults.filter((r): r is RestaurantResult => r !== null);
 
