@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { NutritionLabel } from '@/components/nutrition/NutritionLabel';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { colors, radii, spacing, typography } from '@/constants/theme';
@@ -5,7 +6,6 @@ import { fetchMenuItem } from '@/lib/supabase/menuItems';
 import type { MenuItem } from '@/types/menu';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -17,41 +17,20 @@ import {
 export default function ItemScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [item, setItem] = useState<MenuItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const fetched = await fetchMenuItem(id);
-        if (cancelled) return;
-        if (fetched === null) {
-          setError("This item couldn't be found. It may have been removed.");
-        } else {
-          setItem(fetched);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Could not load this item. Please check your connection and try again.'
-        );
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const {
+    isLoading,
+    isError,
+    error,
+    data: item,
+  } = useQuery<MenuItem, Error>({
+    queryKey: ['item', id],
+    queryFn: async (): Promise<MenuItem> => {
+      const found = await fetchMenuItem(id!);
+      if (found === null) throw new Error("This item couldn't be found. It may have been removed.");
+      return found;
+    },
+    enabled: !!id,
+  });
 
   return (
     <View style={styles.root}>
@@ -75,7 +54,7 @@ export default function ItemScreen() {
         )}
       </View>
 
-      {loading && (
+      {isLoading && (
         <View style={styles.skeletonContainer}>
           <SkeletonLoader width="60%" height={28} borderRadius={radii.sm} />
           <SkeletonLoader width="100%" height={240} borderRadius={radii.md} />
@@ -83,10 +62,12 @@ export default function ItemScreen() {
         </View>
       )}
 
-      {error && (
+      {isError && (
         <View style={styles.centerContent}>
           <FontAwesome name="exclamation-circle" size={28} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>
+            {error.message}
+          </Text>
           <Pressable
             onPress={() => router.back()}
             style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.7 }]}
@@ -96,7 +77,7 @@ export default function ItemScreen() {
         </View>
       )}
 
-      {!loading && item && (
+      {!isLoading && item && (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { CachedDataBanner } from '@/components/nearby/CachedDataBanner';
 import { RadiusSelector } from '@/components/nearby/RadiusSelector';
 import { RestaurantCard } from '@/components/restaurant/RestaurantCard';
@@ -5,6 +6,7 @@ import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { getCachedResults, setCachedResults } from '@/lib/cache/locationCache';
 import { fetchNearbyChains } from '@/lib/overpass/nearbyChains';
+import { supabase } from '@/lib/supabase/client';
 import type { MapPin } from '@/types/map';
 import type { LocationCoords, RestaurantResult } from '@/types/restaurant';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -85,42 +87,61 @@ export default function NearbyScreen() {
 
   const lastFetchRef = useRef<{ lat: number; lng: number; radius: number } | null>(null);
 
-  // Request device geolocation on mount
-  useEffect(() => {
-    (async () => {
+  // ─── Geolocation query ────────────────────────────────────────────────────────
+  const geoQuery = useQuery({
+    queryKey: ['geolocation'],
+    queryFn: async (): Promise<{ latitude: number; longitude: number }> => {
+      // Await the current session before requesting location. If Supabase auth
+      // initialization still holds the Navigator Lock on page load, this call
+      // queues behind it and releases the lock before geolocation runs.
+      await supabase.auth.getSession();
+
       if (Platform.OS === 'web') {
         if (!navigator.geolocation) {
-          setLocationStatus('denied');
-          setEditingLocation(true);
-          return;
+          return Promise.reject(new Error('Geolocation not available'));
         }
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-            setLocationStatus('granted');
-            setLocationLabel('Your location');
-          },
-          () => {
-            setLocationStatus('denied');
-            setEditingLocation(true);
-          },
-          { timeout: 10_000 }
-        );
-      } else {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setLocationStatus('denied');
-          setEditingLocation(true);
-          return;
-        }
-        const pos = await Location.getCurrentPositionAsync({});
-        setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-        setLocationStatus('granted');
-        setLocationLabel('Your location');
+        return new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) =>
+              resolve({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+              }),
+            () => reject(new Error('Location access denied')),
+            { timeout: 10_000 }
+          );
+        });
       }
-    })();
-  }, []);
+      return (async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') throw new Error('Location access denied');
+        const pos = await Location.getCurrentPositionAsync({});
+        return {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        };
+      })();
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 30 * 60 * 1000,
+  });
 
+  // Sync geolocation query result to coords and locationStatus state.
+  // Guard on locationStatus === 'requesting' prevents background geo refetches
+  // from overwriting coords that were set manually via handleLocationSave.
+  useEffect(() => {
+    if (geoQuery.data && locationStatus === 'requesting') {
+      setCoords({ latitude: geoQuery.data.latitude, longitude: geoQuery.data.longitude });
+      setLocationStatus('granted');
+      setLocationLabel('Your location');
+    } else if (geoQuery.isError && locationStatus === 'requesting') {
+      setLocationStatus('denied');
+      setEditingLocation(true);
+    }
+  }, [geoQuery.data, geoQuery.isError]);
+
+  // ─── Restaurant fetch ─────────────────────────────────────────────────────────
   const loadRestaurants = useCallback(async (c: LocationCoords, radius: RadiusOption) => {
     const { latitude: lat, longitude: lng } = c;
 
@@ -140,8 +161,20 @@ export default function NearbyScreen() {
         return;
       }
 
+      const [aliasResult, chainResult] = await Promise.all([
+        supabase.from('osm_aliases').select('osm_name, chain_name'),
+        supabase.rpc('get_chain_names'),
+      ]);
+      const aliasMap = new Map<string, string>();
+      for (const row of aliasResult.data ?? []) {
+        aliasMap.set(row.osm_name, row.chain_name);
+      }
+      const canonicalNames = (chainResult.data ?? []).map(
+        (r: { chain_name: string }) => r.chain_name
+      );
+
       setCachedAt(null);
-      const results = await fetchNearbyChains(c, radius);
+      const results = await fetchNearbyChains(c, radius, aliasMap, canonicalNames);
       setRestaurants(results);
       await setCachedResults(lat, lng, radius, results);
     } catch (err) {
@@ -159,7 +192,7 @@ export default function NearbyScreen() {
 
   useEffect(() => {
     if (coords) {
-      loadRestaurants(coords, radiusMiles);
+      void loadRestaurants(coords, radiusMiles);
     }
   }, [coords, radiusMiles, loadRestaurants]);
 
@@ -393,7 +426,7 @@ export default function NearbyScreen() {
           <FontAwesome name="exclamation-circle" size={28} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
           <Pressable
-            onPress={() => coords && loadRestaurants(coords, radiusMiles)}
+            onPress={() => coords && void loadRestaurants(coords, radiusMiles)}
             style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.7 }]}
           >
             <Text style={styles.retryText}>Try again</Text>

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { CachedDataBanner } from '@/components/nearby/CachedDataBanner';
 import { MenuItemRow } from '@/components/restaurant/MenuItemRow';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -7,7 +8,7 @@ import { fetchMenuItems } from '@/lib/supabase/menuItems';
 import type { MenuItem } from '@/types/menu';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useLocalSearchParams } from 'expo-router';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -21,6 +22,11 @@ import {
 type Section = {
   title: string;
   data: MenuItem[];
+};
+
+type MenuQueryResult = {
+  items: MenuItem[];
+  cachedAt: number | null;
 };
 
 type MenuSearchHeaderProps = {
@@ -93,51 +99,30 @@ export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const chainName = decodeURIComponent(id ?? '');
 
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const {
+    isLoading,
+    isError,
+    error,
+    data,
+    refetch,
+  } = useQuery<MenuQueryResult, Error>({
+    queryKey: ['menuItems', chainName],
+    queryFn: async (): Promise<MenuQueryResult> => {
+      const cached = await getCachedMenuItems(chainName);
+      if (cached) return { items: cached.items, cachedAt: cached.fetchedAt };
+
+      const fetched = await fetchMenuItems(chainName);
+      await setCachedMenuItems(chainName, fetched);
+      return { items: fetched, cachedAt: null };
+    },
+    enabled: !!chainName,
+  });
+
+  const items = data?.items ?? [];
+  const cachedAt = data?.cachedAt ?? null;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
-
-  useEffect(() => {
-    if (!chainName) return;
-    let cancelled = false;
-
-    (async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const cached = await getCachedMenuItems(chainName);
-        if (cached && !cancelled) {
-          setItems(cached.items);
-          setCachedAt(cached.fetchedAt);
-          setLoading(false);
-          return;
-        }
-
-        const fetched = await fetchMenuItems(chainName);
-        if (cancelled) return;
-        setItems(fetched);
-        setCachedAt(null);
-        await setCachedMenuItems(chainName, fetched);
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Could not load the menu. Please check your connection and try again.'
-        );
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [chainName]);
 
   const sections = useMemo(
     () => buildSections(items, searchQuery),
@@ -177,7 +162,7 @@ export default function RestaurantScreen() {
   }
 
   function renderContent() {
-    if (loading) {
+    if (isLoading) {
       return (
         <View style={styles.skeletonContainer}>
           {[...Array(8)].map((_, i) => (
@@ -187,28 +172,15 @@ export default function RestaurantScreen() {
       );
     }
 
-    if (error) {
+    if (isError) {
       return (
         <View style={styles.centerContent}>
           <FontAwesome name="exclamation-circle" size={28} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>
+            {error.message}
+          </Text>
           <Pressable
-            onPress={() => {
-              setItems([]);
-              setLoading(true);
-              setError(null);
-              fetchMenuItems(chainName)
-                .then((fetched) => {
-                  setItems(fetched);
-                  setCachedMenuItems(chainName, fetched);
-                })
-                .catch((err) =>
-                  setError(
-                    err instanceof Error ? err.message : 'Could not load the menu.'
-                  )
-                )
-                .finally(() => setLoading(false));
-            }}
+            onPress={() => void refetch()}
             style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.7 }]}
           >
             <Text style={styles.retryText}>Try again</Text>
@@ -273,7 +245,7 @@ export default function RestaurantScreen() {
           <Text style={styles.chainName} numberOfLines={1}>
             {chainName}
           </Text>
-          {!loading && items.length > 0 && (
+          {!isLoading && items.length > 0 && (
             <Text style={styles.itemCount}>
               {totalVisible === items.length
                 ? `${items.length} items`

@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { colors, radii, spacing, typography } from '@/constants/theme';
@@ -6,7 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { Profile } from '@/types/auth';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -22,8 +23,28 @@ import {
 type EditField = 'name' | 'calorie' | null;
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const queryClient = useQueryClient();
+
+  const {
+    isLoading: loadingProfile,
+    data: profileData,
+    refetch,
+  } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async (): Promise<Profile | null> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      return (data as Profile) ?? null;
+    },
+  });
+
+  const profile = profileData ?? null;
+
   const [editField, setEditField] = useState<EditField>(null);
   const [editValue, setEditValue] = useState('');
   const [savingField, setSavingField] = useState(false);
@@ -33,37 +54,7 @@ export default function ProfileScreen() {
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
 
-  const loadProfile = useCallback(async () => {
-    setLoadingProfile(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-      setProfile(data);
-    } catch {
-      // Profile load failure is surfaced by empty state + retry button
-    } finally {
-      setLoadingProfile(false);
-    }
-  }, []);
-
-  useFocusEffect(useCallback(() => { loadProfile(); }, [loadProfile]));
-
-  // Re-run the profile load when the browser tab regains focus.
-  // useFocusEffect only fires on navigation focus, not on browser-tab focus,
-  // so without this a user returning to an idle tab sees stale or missing data.
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') loadProfile();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [loadProfile]);
+  useFocusEffect(useCallback(() => { void refetch(); }, [refetch]));
 
   function startEdit(field: EditField) {
     setFieldError('');
@@ -92,7 +83,7 @@ export default function ProfileScreen() {
           return;
         }
         const updated = await updateProfile(profile.id, { name: editValue.trim() });
-        setProfile(updated);
+        queryClient.setQueryData(['profile'], updated);
       }
 
       if (editField === 'calorie') {
@@ -102,7 +93,7 @@ export default function ProfileScreen() {
           return;
         }
         const updated = await updateProfile(profile.id, { daily_calorie_goal: parsed });
-        setProfile(updated);
+        queryClient.setQueryData(['profile'], updated);
       }
 
       setEditField(null);
@@ -127,7 +118,7 @@ export default function ProfileScreen() {
         if (!session) return;
         const url = await uploadProfilePhoto(session.user.id, result.assets[0].uri);
         const updated = await updateProfile(profile!.id, { profile_photo_url: url });
-        setProfile(updated);
+        queryClient.setQueryData(['profile'], updated);
         setShowPhotoOptions(false);
       }
     } catch {
@@ -142,7 +133,7 @@ export default function ProfileScreen() {
     setPhotoLoading(true);
     try {
       const updated = await updateProfile(profile.id, { profile_photo_url: null });
-      setProfile(updated);
+      queryClient.setQueryData(['profile'], updated);
       setShowPhotoOptions(false);
     } catch {
       // Silently continue — photo state is non-critical
@@ -182,7 +173,7 @@ export default function ProfileScreen() {
       <View style={styles.centered}>
         <Text style={styles.emptyText}>Could not load profile.</Text>
         <Pressable
-          onPress={loadProfile}
+          onPress={() => void refetch()}
           style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.7 }]}
         >
           <Text style={styles.retryText}>Try again</Text>
