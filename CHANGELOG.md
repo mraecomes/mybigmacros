@@ -26,6 +26,40 @@
 
 ---
 
+## [May 10 2026] — Issue #37 — TanStack Query Migration (profile, restaurant/[id], item/[id]; nearby restaurant fetch deferred)
+
+### Added
+
+- Nothing net-new — this issue was a migration and refactor of existing screens
+
+### Changed
+
+- `app/(tabs)/profile.tsx` — migrated from manual `loadProfile` useCallback + `useFocusEffect` + `visibilitychange` useEffect to TanStack `useQuery`. Removed manual loading/error/profile state. Mutations (`saveEdit`, `handleChangePhoto`, `handleRemovePhoto`) use `queryClient.setQueryData(['profile'], updated)` for instant cache updates. Retry uses `void refetch()`. `visibilitychange` useEffect removed — `refetchOnWindowFocus: true` on the global QueryClient handles tab-focus refetch
+- `app/restaurant/[id].tsx` — migrated from manual useState/useEffect with cancelled-flag pattern to TanStack `useQuery`. Added `MenuQueryResult` type `{ items: MenuItem[]; cachedAt: number | null }`. queryFn checks AsyncStorage cache first (returns early on hit), fetches on miss, stores to cache
+- `app/item/[id].tsx` — migrated from manual useState/useEffect to TanStack `useQuery`. Removed all local state (zero useState/useEffect after migration). queryFn throws on null item to unify the error path — no separate null-check branch needed
+- `app/(tabs)/nearby.tsx` — geo query migrated from a manual `useEffect` on mount to TanStack `useQuery` with `staleTime: 30 * 60 * 1000`, `retry: false`, `refetchOnWindowFocus: false`. Sync `useEffect` watching `geoQuery.data` and `geoQuery.isError` gains `locationStatus === 'requesting'` guard — prevents background geo refetches from overwriting coords set manually by `handleLocationSave`. `await supabase.auth.getSession()` added as first line of geo queryFn to serialize behind any in-progress Navigator Lock operation on page load. Restaurant fetch remains on manual useState/useEffect (see Deferred)
+- `lib/overpass/nearbyChains.ts` — all Supabase calls removed. `matchChainName` call removed (was firing 200+ individual per-element alias queries via `Promise.all`). Function signature updated to `fetchNearbyChains(coords, radiusMiles, aliasMap: Map<string, string>, canonicalNames: string[])`. Full `osm_aliases` table fetch + `get_chain_names` RPC moved to the caller. Alias lookup and Fuse.js fuzzy match now done entirely in-memory from the passed-in data — no per-element network requests
+
+### Fixed
+
+- **Navigator Lock cascade error on page load** — geo queryFn racing with Supabase auth initialization caused a lock steal cascade. Fixed by awaiting `supabase.auth.getSession()` at the top of the geo queryFn to queue it behind any in-progress lock operation before geolocation runs
+- **Geo refetch overwriting manual coords** — with TanStack's default `staleTime: 0`, background geo refetches completed and the sync `useEffect` unconditionally overwrote `coords` with device values, destroying a manually-entered location. Fixed by setting `staleTime: 30 * 60 * 1000` and adding the `locationStatus === 'requesting'` guard
+- **200+ simultaneous Supabase requests causing ERR_INSUFFICIENT_RESOURCES** — `fetchNearbyChains` called `matchChainName` in `Promise.all` for every Overpass element. Each call fired one Supabase `.maybeSingle()` against `osm_aliases`. Saturated the browser connection pool. Fixed by moving Supabase calls to the caller and passing pre-fetched data into `fetchNearbyChains`
+
+### Deferred
+
+- **nearby.tsx restaurant fetch — not migrated to useQuery** — Supabase calls inside a TanStack queryFn are blocked by the Web Locks API after a manual location change. queryFn enters isLoading but `fetchNearbyChains` never reaches the Overpass request. The `await supabase.auth.getSession()` fix resolves the page-load race but not the post-interaction case. Reverted to original useState/useEffect. Tracked as Issue #39. Possible path: `useMutation` instead of direct state updates in `handleLocationSave`
+
+### Decisions Made
+
+- **`await supabase.auth.getSession()` as Navigator Lock synchronization point** — queues the geo queryFn behind any in-progress auth lock on page load without requiring changes to AuthContext or _layout.tsx
+- **`staleTime: 30 * 60 * 1000` on geo query** — device location doesn't meaningfully change within a 30-minute session; prevents unnecessary re-requests and eliminates the stale-refetch → sync-useEffect → coords-overwrite loop
+- **`locationStatus === 'requesting'` guard on sync useEffect** — once `locationStatus` moves to `'granted'` or `'manual'`, the sync useEffect is permanently disabled, preventing any future geo refetch from overwriting coords. Defense in depth alongside staleTime
+- **Move Supabase calls from nearbyChains.ts to the caller** — `fetchNearbyChains` had no React context. Moving the two Supabase calls to `loadRestaurants` gives them normal browser execution context where the Navigator Lock behaves correctly. `fetchNearbyChains` is now a pure function: Overpass fetch + in-memory matching only
+- **Navigator Lock contention filed as Issue #39** — `useMutation` instead of direct state updates in `handleLocationSave` may give TanStack the scheduling context it needs before the queryFn fires. Tracked explicitly so the investigation path is not lost
+
+---
+
 ## [May 9 2026] — Issue #9 — Nutrition Browser (Restaurant Menu Screen + Item Detail Screen)
 
 ### Added
@@ -409,5 +443,5 @@
 
 ---
 
-*Last updated: May 9 2026*
+*Last updated: May 10 2026*
 *Product owner: Mallory Comes*

@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #9 Complete
-**Last Updated:** May 9 2026
-**Last Session:** Issue #9 complete — Restaurant menu screen (app/restaurant/[id].tsx): SectionList with category headers, search bar with stable focus (MenuSearchHeader as top-level React.memo, fixed tree position outside SectionList), item count display, skeleton loading, error + retry, empty state, AsyncStorage 24hr cache + CachedDataBanner. Item detail screen (app/item/[id].tsx): full nutrition panel with missing data rules ("Calories unavailable" / "—" for macros), Protein Hit + Fiber Fuel badge display, serving size. Bug fixes: processLock removed and replaced with Supabase's own navigatorLock (idle-session deadlock fix), TOKEN_REFRESHED functional updater (no resolveProfile race), visibilitychange listeners on web (layout.tsx + profile.tsx), Profile screen error state + retry button, QueryClient defaultOptions.
-**Next Session Goal:** Issue #10 — Macro-Meter visualization (React Native SVG)
+**Build Phase:** MVP — Issue #37 PR Open
+**Last Updated:** May 10 2026
+**Last Session:** Issue #37 — TanStack Query migration: profile.tsx, restaurant/[id].tsx, and item/[id].tsx migrated to useQuery. nearby.tsx geo query migrated to useQuery with locationStatus guard (prevents geo refetch from overwriting manual coords) and 30min staleTime. nearbyChains.ts refactored from 200+ parallel per-element Supabase calls to accepting pre-fetched aliasMap + canonicalNames as parameters (2 Supabase calls total in the caller). nearby.tsx restaurant fetch reverted to useState/useEffect — Supabase calls inside TanStack queryFn context are blocked by Navigator Lock after a manual location change. Tracked as Issue #39. PR #40 open.
+**Next Session Goal:** Issue #10 — Macro-Meter visualization (React Native SVG). Address Issue #39 (Navigator Lock) if blocking.
 
 ---
 
@@ -110,7 +110,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ## Current Blockers
 
-None — planning phase complete, ready to begin pre-build tasks.
+- **Issue #39 — Navigator Lock contention in nearby.tsx restaurant queryFn** — Supabase calls inside a TanStack Query queryFn are blocked by the Web Locks API after a manual location change. nearby.tsx restaurant fetch reverted to useState/useEffect. Investigation notes in Issue #39.
 
 ---
 
@@ -144,6 +144,7 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ## Recently Completed
 
+- 🔄 Issue #37 — TanStack Query migration: profile.tsx, restaurant/[id].tsx, item/[id].tsx migrated to useQuery. nearbyChains.ts refactored to accept aliasMap + canonicalNames as params (eliminates 200+ parallel Supabase calls). nearby.tsx geo query on useQuery with locationStatus guard + 30min staleTime. nearby.tsx restaurant fetch reverted — Navigator Lock contention (Issue #39). PR #40 open
 - ✅ Issue #9 — Nutrition browser: restaurant menu screen (SectionList by category, search with stable React.memo focus, skeleton/error/empty states, AsyncStorage 24hr cache + CachedDataBanner), item detail screen (full nutrition panel, missing data rules, badge display), processLock removed and replaced with Supabase navigatorLock (idle-session deadlock fix), TOKEN_REFRESHED functional updater, visibilitychange listeners (layout + profile), Profile screen error state + retry button, QueryClient defaultOptions
 - ✅ Issue #8 — Restaurant locator: device geolocation (web + native) with inline zip/city fallback, Overpass API (fast_food + restaurant amenities) + chainMatcher.ts pipeline, Mapbox web map (dark-v11, initials pins, user location dot, radius ring), responsive split layout (60/40 wide / stacked narrow), pin preview card with edge-aware repositioning, RestaurantCard list sorted by distance, AsyncStorage 24hr cache + CachedDataBanner, inline location edit with Electric Mint focus ring
 - ✅ Issue #7 — Navigation structure: TopNav.tsx web top nav with hamburger collapse, platform-split tab layout (TopNav on web / native tab bar on mobile), app.config.ts web.output changed to 'single' for SPA routing. Fixed: white screen on direct URL nav (expo-splash-screen is a no-op on web), two Supabase Navigator Lock cascade errors replaced with processLock (in-memory promise-chain lock), invisible text on browse screen (font-face paint delay), font load failure blocking app indefinitely
@@ -173,5 +174,5 @@ None — planning phase complete, ready to begin pre-build tasks.
 
 ---
 
-*Last updated: May 9 2026*
+*Last updated: May 10 2026*
 *Product owner: Mallory Comes*
