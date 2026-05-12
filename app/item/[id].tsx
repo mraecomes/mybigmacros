@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { MacroMeter } from '@/components/nutrition/MacroMeter';
 import { NutritionLabel } from '@/components/nutrition/NutritionLabel';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { colors, radii, spacing, typography } from '@/constants/theme';
+import { supabase } from '@/lib/supabase/client';
 import { fetchMenuItem } from '@/lib/supabase/menuItems';
+import type { Profile } from '@/types/auth';
 import type { MenuItem } from '@/types/menu';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -30,6 +33,20 @@ export default function ItemScreen() {
       return found;
     },
     enabled: !!id,
+  });
+
+  const { data: profile } = useQuery<Profile | null>({
+    queryKey: ['profile'],
+    queryFn: async (): Promise<Profile | null> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      return (data as Profile) ?? null;
+    },
   });
 
   return (
@@ -90,10 +107,12 @@ export default function ItemScreen() {
             </View>
           )}
 
-          {/* Macro-Meter — implemented in Issue #10 */}
-          <View style={styles.macroMeterStub}>
-            <Text style={styles.macroMeterStubText}>Macro-Meter · Coming in Issue #10</Text>
-          </View>
+          <MacroMeter
+            calories={item.calories}
+            dailyCalorieGoal={profile?.daily_calorie_goal ?? null}
+            protein_g={item.protein_g}
+            fiber_g={item.fiber_g}
+          />
 
           <NutritionLabel item={item} />
 
@@ -194,20 +213,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   categoryText: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  macroMeterStub: {
-    height: 180,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  macroMeterStubText: {
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
