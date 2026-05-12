@@ -26,6 +26,36 @@
 
 ---
 
+## [May 12 2026] — Issue #10 — Macro-Meter React Native SVG Visualization
+
+### Added
+
+- `components/nutrition/MacroMeter.tsx` — Macro-Meter visualization built with React Native SVG. Main ring: full-circle arc (Ketchup Red `#C41E3A`) fills proportionally from 12 o'clock (`rotation={-90}`) against the user's daily calorie goal; arc visually caps at full circle when over goal, but the percentage label shows the real number (e.g. "124% of goal"). Calorie count and percentage centered inside the ring via `SvgText`. Protein and fiber: two side-by-side semicircle arcs (Electric Mint `#2AF5FF`) below the main ring, filled proportionally against FDA daily values (50g protein / 28g fiber); fiber arc rendered at 55% `strokeOpacity` to visually differentiate without hiding data. DV tooltip (FontAwesome `info-circle`) on each arc label — hover on web (`onHoverIn`/`onHoverOut` on Pressable), tap-to-toggle on mobile (`onPress`). Protein tooltip: `left: 0`, opens rightward toward center. Fiber tooltip: `right: 0`, opens leftward toward center — neither clips on mobile. Three calorie states: (1) calories null → "Calories unavailable", no ring rendered; (2) no daily goal set (null or 0) → empty ring track with calorie count prominently centered, no arc; (3) normal → filled arc + count + percentage. Protein or fiber null → "Not available" text vertically centered in a fixed-height combined zone matching the data-present column height, no arc, no tooltip icon
+- `react-native-svg@15.12.1` — installed via `pnpm expo install`; SDK 54 compatible. Renders identically on Expo web and Expo Go. Chosen over Victory Native per ARCHITECTURE.md decision (reliable web rendering, full shape control)
+
+### Changed
+
+- `app/item/[id].tsx` — replaced Macro-Meter stub `View` with `<MacroMeter />`. Added second `useQuery` with `queryKey: ['profile']` and matching `queryFn` to supply `daily_calorie_goal`; TanStack Query serves cached profile data instantly — no extra Supabase call. When the user updates their calorie goal in Profile and returns to an item screen, the arc reflects the new goal immediately via the `queryClient.setQueryData` already in place in `profile.tsx`. Removed `macroMeterStub` and `macroMeterStubText` styles
+
+### Fixed
+
+- **"Not available" pinned to top of column** — original null state placed "Not available" in `arcTopZone` (height 28px) with `arcSvgZone` (height 76px) sitting empty below it. Text appeared at the top of the combined space rather than the center. Fixed by collapsing both zones into a single `arcNullZone` (height 104px = 28 + 76) with `justifyContent: 'center'` — text is now vertically centered at the midpoint of where the arc would sit, and both columns read as visually equivalent regardless of data availability
+
+### Deferred
+
+- **Arc entry animation** — arcs render as static fills. Animating the stroke on mount via `Animated` + `strokeDasharray` was considered but skipped to keep cross-platform rendering simple and reliable for MVP
+
+### Decisions Made
+
+- **Arc visually caps at 100%, label shows real percentage** — the ring fills completely at or above goal (no visual overflow), but the percentage label is uncapped and shows the true number (e.g. "124% of goal"). Acts as a visual warning — full red ring signals over-goal without the arc wrapping in a confusing direction. Original plan capped both; changed after UAT feedback
+- **"Not available" replaces empty arc for null protein/fiber** — an empty arc track could be misread as "0% of daily value." Showing "Not available" with no SVG rendered is honest and consistent with the app's missing-data policy. Fixed equal-width columns (`arcNullZone` matching `arcTopZone + arcSvgZone` height) prevent layout shift between data-present and null states
+- **Tooltip anchor side tied to column position** — protein (left column) uses `left: 0` so the tooltip extends rightward toward screen center; fiber (right column) uses `right: 0` so the tooltip extends leftward. `anchorSide: 'left' | 'right'` prop passed from `MacroRow` → `MacroArc`. Both 150px tooltips stay within their column on any typical mobile screen width
+- **`onHoverIn`/`onHoverOut` on Pressable for web hover** — available in React Native 0.74+. No-ops on native, so `onPress` handles the mobile tap. No platform branching or TypeScript casting required — clean cross-platform API
+- **Fiber arc at 55% `strokeOpacity`** — applied only to the Electric Mint fill stroke (not the track, gram value, or label). Gives visual hierarchy between protein and fiber without dimming text or hiding information
+- **Daily calorie goal via shared TanStack Query cache** — `item/[id].tsx` uses the same `queryKey: ['profile']` as `profile.tsx`. TanStack deduplicates the query; the profile is already in cache from earlier in the session and returns instantly. When the user updates their goal in Profile, `queryClient.setQueryData(['profile'], updated)` in `profile.tsx` updates the shared cache — the Macro-Meter reflects the change immediately on return to the item screen with no extra network call or additional plumbing
+
+---
+
 ## [May 10 2026] — Issue #37 — TanStack Query Migration (profile, restaurant/[id], item/[id]; nearby restaurant fetch deferred)
 
 ### Added
@@ -443,5 +473,5 @@
 
 ---
 
-*Last updated: May 10 2026*
+*Last updated: May 12 2026*
 *Product owner: Mallory Comes*

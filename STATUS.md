@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #37 PR Open
-**Last Updated:** May 10 2026
-**Last Session:** Issue #37 — TanStack Query migration: profile.tsx, restaurant/[id].tsx, and item/[id].tsx migrated to useQuery. nearby.tsx geo query migrated to useQuery with locationStatus guard (prevents geo refetch from overwriting manual coords) and 30min staleTime. nearbyChains.ts refactored from 200+ parallel per-element Supabase calls to accepting pre-fetched aliasMap + canonicalNames as parameters (2 Supabase calls total in the caller). nearby.tsx restaurant fetch reverted to useState/useEffect — Supabase calls inside TanStack queryFn context are blocked by Navigator Lock after a manual location change. Tracked as Issue #39. PR #40 open.
-**Next Session Goal:** Issue #10 — Macro-Meter visualization (React Native SVG). Address Issue #39 (Navigator Lock) if blocking.
+**Build Phase:** MVP — Issue #10 Complete
+**Last Updated:** May 12 2026
+**Last Session:** Issue #10 — Macro-Meter: built MacroMeter.tsx with React Native SVG (calorie ring, protein/fiber semicircles, DV tooltips). Installed react-native-svg@15.12.1. Wired into item/[id].tsx via cached ['profile'] TanStack Query. PR #42 merged to main.
+**Next Session Goal:** Issue #11 — Calorie filter screen (budget input + results + "Just over your limit" section)
 
 ---
 
@@ -48,7 +48,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Nutrition browser — restaurant menu screen | ✅ Complete | SectionList by category, search with stable focus (React.memo + fixed tree), skeleton, error, empty state, 24hr cache |
 | Nutrition browser — item detail screen | ✅ Complete | Full nutrition panel, serving size, badge display, back navigation |
 | Missing data display rules | ✅ Complete | "Calories unavailable" when null, "—" for all missing macros. Badge ineligibility for missing protein/fiber |
-| Macro-Meter visualization (React Native SVG) | ⬜ Not started | Item detail screen |
+| Macro-Meter visualization (React Native SVG) | ✅ Complete | item/[id].tsx |
 | Calorie filter — input + results screen | ⬜ Not started | |
 | Calorie filter — "Just over your limit" section | ⬜ Not started | |
 | Badge system — Protein Hit | ⬜ Not started | ≥20g protein AND <500 cal, Mustard Gold |
@@ -144,7 +144,8 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ## Recently Completed
 
-- 🔄 Issue #37 — TanStack Query migration: profile.tsx, restaurant/[id].tsx, item/[id].tsx migrated to useQuery. nearbyChains.ts refactored to accept aliasMap + canonicalNames as params (eliminates 200+ parallel Supabase calls). nearby.tsx geo query on useQuery with locationStatus guard + 30min staleTime. nearby.tsx restaurant fetch reverted — Navigator Lock contention (Issue #39). PR #40 open
+- ✅ Issue #10 — Macro-Meter: MacroMeter.tsx (React Native SVG) with full-circle calorie arc (Ketchup Red, % of daily goal, label uncapped), protein + fiber semicircle arcs (Electric Mint, FDA DV reference, fiber at 55% opacity), DV tooltips (hover web / tap mobile, column-aware anchor side), full missing-data states ("Calories unavailable", fixed-width "Not available" columns), profile daily_calorie_goal via shared TanStack Query cache. react-native-svg@15.12.1 installed. PR #42 merged.
+- ✅ Issue #37 — TanStack Query migration: profile.tsx, restaurant/[id].tsx, item/[id].tsx migrated to useQuery. nearbyChains.ts refactored to accept aliasMap + canonicalNames as params (eliminates 200+ parallel Supabase calls). nearby.tsx geo query on useQuery with locationStatus guard + 30min staleTime. nearby.tsx restaurant fetch reverted — Navigator Lock contention (Issue #39). PR #40 open
 - ✅ Issue #9 — Nutrition browser: restaurant menu screen (SectionList by category, search with stable React.memo focus, skeleton/error/empty states, AsyncStorage 24hr cache + CachedDataBanner), item detail screen (full nutrition panel, missing data rules, badge display), processLock removed and replaced with Supabase navigatorLock (idle-session deadlock fix), TOKEN_REFRESHED functional updater, visibilitychange listeners (layout + profile), Profile screen error state + retry button, QueryClient defaultOptions
 - ✅ Issue #8 — Restaurant locator: device geolocation (web + native) with inline zip/city fallback, Overpass API (fast_food + restaurant amenities) + chainMatcher.ts pipeline, Mapbox web map (dark-v11, initials pins, user location dot, radius ring), responsive split layout (60/40 wide / stacked narrow), pin preview card with edge-aware repositioning, RestaurantCard list sorted by distance, AsyncStorage 24hr cache + CachedDataBanner, inline location edit with Electric Mint focus ring
 - ✅ Issue #7 — Navigation structure: TopNav.tsx web top nav with hamburger collapse, platform-split tab layout (TopNav on web / native tab bar on mobile), app.config.ts web.output changed to 'single' for SPA routing. Fixed: white screen on direct URL nav (expo-splash-screen is a no-op on web), two Supabase Navigator Lock cascade errors replaced with processLock (in-memory promise-chain lock), invisible text on browse screen (font-face paint delay), font load failure blocking app indefinitely
@@ -174,5 +175,5 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ---
 
-*Last updated: May 10 2026*
+*Last updated: May 12 2026*
 *Product owner: Mallory Comes*
