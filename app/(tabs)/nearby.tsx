@@ -5,6 +5,7 @@ import { RestaurantCard } from '@/components/restaurant/RestaurantCard';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { getCachedResults, setCachedResults } from '@/lib/cache/locationCache';
+import { setLastSearchParams } from '@/lib/cache/lastSearchParams';
 import { fetchNearbyChains } from '@/lib/overpass/nearbyChains';
 import { supabase } from '@/lib/supabase/client';
 import type { MapPin } from '@/types/map';
@@ -177,6 +178,7 @@ export default function NearbyScreen() {
       const results = await fetchNearbyChains(c, radius, aliasMap, canonicalNames);
       setRestaurants(results);
       await setCachedResults(lat, lng, radius, results);
+      void setLastSearchParams({ lat, lng, radiusMiles: radius });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('abort') || msg.includes('AbortError')) {

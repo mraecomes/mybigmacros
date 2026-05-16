@@ -28,6 +28,12 @@ ios/
 # EAS
 .easignore
 
+# Playwright
+playwright-report/
+test-results/
+/node_modules/playwright*
+tests/auth/
+
 # Data files (local only — never commit)
 ms_annual_data_2022.xls
 scripts/*.csv
