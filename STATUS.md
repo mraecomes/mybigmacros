@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #10 Complete
-**Last Updated:** May 12 2026
-**Last Session:** Issue #10 — Macro-Meter: built MacroMeter.tsx with React Native SVG (calorie ring, protein/fiber semicircles, DV tooltips). Installed react-native-svg@15.12.1. Wired into item/[id].tsx via cached ['profile'] TanStack Query. PR #42 merged to main.
-**Next Session Goal:** Issue #11 — Calorie filter screen (budget input + results + "Just over your limit" section)
+**Build Phase:** MVP — Issue #11 Complete
+**Last Updated:** May 15 2026
+**Last Session:** Issue #11 — Calorie filter screen: built budget.tsx (calorie input with profile pre-fill, In Budget / Just Over Limit toggle tabs, accordion results via BudgetRestaurantSection + BudgetItemCard), fetchMenuItemsBatch() batch Supabase query, one-time cache wipe guard (wipeMenuCacheIfNeeded) to flush corruption from a progressive loading attempt, Playwright config + 24-test suite (24/24 passed). PR #44 merged to main.
+**Next Session Goal:** Issue #12 — Badge system (Protein Hit + Fiber Fuel)
 
 ---
 
@@ -49,8 +49,8 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Nutrition browser — item detail screen | ✅ Complete | Full nutrition panel, serving size, badge display, back navigation |
 | Missing data display rules | ✅ Complete | "Calories unavailable" when null, "—" for all missing macros. Badge ineligibility for missing protein/fiber |
 | Macro-Meter visualization (React Native SVG) | ✅ Complete | item/[id].tsx |
-| Calorie filter — input + results screen | ⬜ Not started | |
-| Calorie filter — "Just over your limit" section | ⬜ Not started | |
+| Calorie filter — input + results screen | ✅ Complete | Optional budget input with profile pre-fill, In Budget / Just Over Limit toggle pills with live counts, accordion results (BudgetRestaurantSection) grouped by restaurant sorted by distance, items sorted by calories ascending |
+| Calorie filter — "Just over your limit" section | ✅ Complete | Items budget+1 to budget+100 shown in dimmed "Just Over Limit" tab; items >100 over budget excluded from both tabs |
 | Badge system — Protein Hit | ⬜ Not started | ≥20g protein AND <500 cal, Mustard Gold |
 | Badge system — Fiber Fuel | ⬜ Not started | ≥5g fiber AND <500 cal, Muted Sage Green |
 | Badge tooltips (tap/hover) | ⬜ Not started | |
@@ -144,6 +144,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ## Recently Completed
 
+- ✅ Issue #11 — Calorie filter screen: budget.tsx (calorie input, profile pre-fill, In Budget / Just Over Limit toggle tabs, accordion results via BudgetRestaurantSection + BudgetItemCard), fetchMenuItemsBatch() batch Supabase query, wipeMenuCacheIfNeeded() one-time cache flush, Playwright config + 24-test suite (24/24 passed). PR #44 merged.
 - ✅ Issue #10 — Macro-Meter: MacroMeter.tsx (React Native SVG) with full-circle calorie arc (Ketchup Red, % of daily goal, label uncapped), protein + fiber semicircle arcs (Electric Mint, FDA DV reference, fiber at 55% opacity), DV tooltips (hover web / tap mobile, column-aware anchor side), full missing-data states ("Calories unavailable", fixed-width "Not available" columns), profile daily_calorie_goal via shared TanStack Query cache. react-native-svg@15.12.1 installed. PR #42 merged.
 - ✅ Issue #37 — TanStack Query migration: profile.tsx, restaurant/[id].tsx, item/[id].tsx migrated to useQuery. nearbyChains.ts refactored to accept aliasMap + canonicalNames as params (eliminates 200+ parallel Supabase calls). nearby.tsx geo query on useQuery with locationStatus guard + 30min staleTime. nearby.tsx restaurant fetch reverted — Navigator Lock contention (Issue #39). PR #40 open
 - ✅ Issue #9 — Nutrition browser: restaurant menu screen (SectionList by category, search with stable React.memo focus, skeleton/error/empty states, AsyncStorage 24hr cache + CachedDataBanner), item detail screen (full nutrition panel, missing data rules, badge display), processLock removed and replaced with Supabase navigatorLock (idle-session deadlock fix), TOKEN_REFRESHED functional updater, visibilitychange listeners (layout + profile), Profile screen error state + retry button, QueryClient defaultOptions
@@ -175,5 +176,5 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ---
 
-*Last updated: May 12 2026*
+*Last updated: May 15 2026*
 *Product owner: Mallory Comes*
