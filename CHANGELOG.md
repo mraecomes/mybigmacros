@@ -26,6 +26,43 @@
 
 ---
 
+## [May 15 2026] — Issue #11 — Calorie Filter Screen (budget input, accordion results, In Budget / Just Over Limit tabs)
+
+### Added
+
+- `app/(tabs)/budget.tsx` — full calorie filter screen: optional calorie input with 300ms debounce, profile pre-fill from `daily_calorie_goal` (with "Pre-filled from your daily calorie goal · Edit anytime" disclaimer), In Budget / Just Over Limit toggle pills with live item counts, accordion results grouped by restaurant sorted by distance ascending, items sorted by calories ascending within each group, location disclaimer showing extracted city name, CachedDataBanner when serving cached results, "No location set" empty state, "What can you get?" prompt when no budget is entered, "Nothing fits this budget" empty state, error state with retry, maxWidth 768 constraint on wide viewports
+- `components/budget/BudgetRestaurantSection.tsx` — collapsible accordion component. Header shows chain name and two-letter initials circle (e.g. "MC" for McDonald's, "BK" for Burger King). Tapping expands or collapses the item list. Parent view is keyed by `activeTab` so all sections remount collapsed on every tab switch — intentional, prevents stale expanded state from carrying across tabs
+- `components/budget/BudgetItemCard.tsx` — item card rendered inside each expanded accordion section; shows item name and calorie count
+- `lib/supabase/menuItems.ts` — added `fetchMenuItemsBatch(chainNames: string[]): Promise<MenuItem[]>` — single Supabase query for multiple chain names using `.in()` filter; replaces the previous single-chain `fetchMenuItems` call for the budget screen context
+- `lib/cache/menuCache.ts` — added `clearAllMenuCacheEntries()` (wipes all AsyncStorage keys starting with `menu_`) and `wipeMenuCacheIfNeeded()` (one-time guard using `menu_cache_v2_cleared` AsyncStorage flag — runs once per device to flush corrupted cache entries from the progressive loading attempt, never again)
+- `lib/cache/lastSearchParams.ts` — utility for reading the last search coords and radius from AsyncStorage (`last_search_params` key), used by budget.tsx to load results without requiring a new Overpass query
+- `playwright.config.ts` — Playwright configuration: Chromium only, 1 worker, 1 retry, HTML reporter writing to `tests/reports/issue-11-playwright-report/`, screenshot on all tests, video on retry, base URL `http://localhost:8081`
+- `tests/issue-11-calorie-filter.spec.ts` — 24-test Playwright suite across three describe blocks: Standard Flow (19 tests covering all ACs, edge cases, and UI behaviors), No Location (2 tests), Profile Pre-fill (3 tests). Route intercepts for Supabase auth and profile endpoints; localStorage seeding via `addInitScript` for location cache, restaurant list, and menu items
+- `tests/reports/issue-11-qa-report.md` — complete QA report documenting all bugs found and fixed, manual testing checklist, and final test results
+- `tests/reports/issue-11-playwright-report/` — HTML report with 16 screenshots from the final clean passing run
+
+### Fixed
+
+- **Cache corruption from progressive loading** — an earlier iteration of `loadMenuItems` called `setCachedMenuItems(name, byChain.get(name) ?? [])`, which wrote empty arrays to AsyncStorage for any chain that returned no results from `fetchMenuItemsBatch` (e.g. a name mismatch or chain not in the DB). On the next visit, `getCachedMenuItems` returned the empty array as a valid cache hit, causing the chain to appear permanently menu-less until the 24hr TTL expired. Fixed by reverting to a collect-then-set pattern and only calling `setCachedMenuItems` when `items && items.length > 0`. `wipeMenuCacheIfNeeded()` added to flush any corrupted entries already written to devices
+- **Progressive loading state removed** — `loadingChains` (`Set<string>`) and its associated skeleton rows were introduced alongside the progressive loading approach and had no purpose after the revert. Removed entirely — state declaration, all `setLoadingChains` calls, and the render block iterating the set
+- **Playwright tests wiping seeded menu data** — 16/24 tests failed with 30-second timeouts after `wipeMenuCacheIfNeeded()` was added to `loadData`. Each test starts with a fresh localStorage; `seedLocalStorage` seeded `menu_McDonald's` and `menu_Burger King` but not the `menu_cache_v2_cleared` flag, so the wipe fired on every test mount and deleted the seeded data before `loadMenuItems` could read it. The Supabase route intercept returned `[]` for all `menu_items` requests, leaving results empty. Fixed by adding `localStorage.setItem('menu_cache_v2_cleared', '1')` to `seedLocalStorage`'s `addInitScript` callback
+
+### Decisions Made
+
+- **Results in two toggle tabs, not stacked sections** — "In Budget" and "Just Over Limit" implemented as toggle pills rather than two vertically stacked sections. Keeps the list focused on one group at a time; live item count on each pill gives the user an immediate read on what's available without scrolling
+- **100-calorie ceiling for "Just Over Limit"** — items between budget+1 and budget+100 calories appear in the Just Over Limit tab; items more than 100 cal over budget are excluded from both tabs. Matches PRD Section 5.5
+- **Accordion sections keyed by `activeTab`** — `<View key={activeTab}>` wrapping all `BudgetRestaurantSection` instances causes React to remount every accordion as collapsed on tab switch. Defense against stale open/closed state persisting across In Budget ↔ Just Over Limit transitions
+- **`wipeMenuCacheIfNeeded()` called at the start of `loadData`** — runs once per device via `menu_cache_v2_cleared` AsyncStorage flag. Placed first in `loadData` so the wipe completes before any cache reads run, ensuring no corrupted entry is served as a cache hit during the same session it is cleared
+
+### QA Results
+
+- **Result:** PASSED
+- **Automated:** 24 passed, 0 failed
+- **Manual:** all scenarios passed
+- **Not tested:** profile loading skeleton (timing-dependent, requires network throttling controls), AsyncStorage persistence across hard browser reloads (verify in Chrome DevTools → Application → Local Storage), native Expo Go behavior on physical device
+
+---
+
 ## [May 12 2026] — Issue #10 — Macro-Meter React Native SVG Visualization
 
 ### Added
@@ -473,5 +510,5 @@
 
 ---
 
-*Last updated: May 12 2026*
+*Last updated: May 15 2026*
 *Product owner: Mallory Comes*
