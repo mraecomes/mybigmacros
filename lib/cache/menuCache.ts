@@ -41,3 +41,28 @@ export async function setCachedMenuItems(
     // Caching is best-effort — never block the UI on a storage failure
   }
 }
+
+export async function clearAllMenuCacheEntries(): Promise<void> {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const menuKeys = keys.filter((k) => k.startsWith(PREFIX));
+    if (menuKeys.length > 0) {
+      await AsyncStorage.multiRemove(menuKeys);
+    }
+  } catch {
+    // Best-effort — ignore storage errors
+  }
+}
+
+const WIPE_FLAG = 'menu_cache_v2_cleared';
+
+export async function wipeMenuCacheIfNeeded(): Promise<void> {
+  try {
+    const flagged = await AsyncStorage.getItem(WIPE_FLAG);
+    if (flagged) return;
+    await clearAllMenuCacheEntries();
+    await AsyncStorage.setItem(WIPE_FLAG, '1');
+  } catch {
+    // Best-effort — never block load on a storage failure
+  }
+}

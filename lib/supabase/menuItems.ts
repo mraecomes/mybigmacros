@@ -16,6 +16,20 @@ export async function fetchMenuItems(chainName: string): Promise<MenuItem[]> {
   return (data ?? []) as MenuItem[];
 }
 
+export async function fetchMenuItemsBatch(chainNames: string[]): Promise<MenuItem[]> {
+  if (chainNames.length === 0) return [];
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .in('chain_name', chainNames);
+
+  if (error) {
+    throw new Error('Could not load menu items. Please check your connection and try again.');
+  }
+
+  return (data ?? []) as MenuItem[];
+}
+
 export async function fetchMenuItem(id: string): Promise<MenuItem | null> {
   const { data, error } = await supabase
     .from('menu_items')
