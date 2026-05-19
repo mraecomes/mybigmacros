@@ -8,9 +8,9 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #11 Complete
-**Last Updated:** May 15 2026
-**Last Session:** Issue #11 — Calorie filter screen: built budget.tsx (calorie input with profile pre-fill, In Budget / Just Over Limit toggle tabs, accordion results via BudgetRestaurantSection + BudgetItemCard), fetchMenuItemsBatch() batch Supabase query, one-time cache wipe guard (wipeMenuCacheIfNeeded) to flush corruption from a progressive loading attempt, Playwright config + 24-test suite (24/24 passed). PR #44 merged to main.
+**Build Phase:** MVP — Issue #38 Complete
+**Last Updated:** May 18 2026
+**Last Session:** Issue #38 — Browse screen: built browse.tsx (category grid from get_categories RPC, A-Z chain list, category item view with Prev/Next pagination at 20 items/page, global search with 300ms debounce, category-scoped search, error/empty states), lib/supabase/browse.ts (fetchCategories, fetchAllChains, fetchCategoryItems, searchMenuItems), get_categories SQL migration, Playwright config + 37-test suite (37/37 passed). pnpm audit surfaced vulnerabilities in xlsx, brace-expansion, and ws — deferred to Issue #46. PR #47 merged to main.
 **Next Session Goal:** Issue #12 — Badge system (Protein Hit + Fiber Fuel)
 
 ---
@@ -51,6 +51,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Macro-Meter visualization (React Native SVG) | ✅ Complete | item/[id].tsx |
 | Calorie filter — input + results screen | ✅ Complete | Optional budget input with profile pre-fill, In Budget / Just Over Limit toggle pills with live counts, accordion results (BudgetRestaurantSection) grouped by restaurant sorted by distance, items sorted by calories ascending |
 | Calorie filter — "Just over your limit" section | ✅ Complete | Items budget+1 to budget+100 shown in dimmed "Just Over Limit" tab; items >100 over budget excluded from both tabs |
+| Browse screen — searchable chain and menu item directory | ✅ Complete | Category grid + A-Z chain list default state, category item view with Prev/Next pagination at 20 items/page, global search (chains + items, 300ms debounce, 3+ char trigger), category-scoped search, missing data rules, error and empty states |
 | Badge system — Protein Hit | ⬜ Not started | ≥20g protein AND <500 cal, Mustard Gold |
 | Badge system — Fiber Fuel | ⬜ Not started | ≥5g fiber AND <500 cal, Muted Sage Green |
 | Badge tooltips (tap/hover) | ⬜ Not started | |
@@ -145,6 +146,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ## Recently Completed
 
+- ✅ Issue #38 — Browse screen: browse.tsx (category grid from get_categories RPC, A-Z chain list, category item view with Prev/Next pagination at 20 items/page, global search with 300ms debounce, category-scoped search, error/empty states), lib/supabase/browse.ts, get_categories SQL migration, 37-test Playwright suite (37/37 passed). PR #47 merged.
 - ✅ Issue #11 — Calorie filter screen: budget.tsx (calorie input, profile pre-fill, In Budget / Just Over Limit toggle tabs, accordion results via BudgetRestaurantSection + BudgetItemCard), fetchMenuItemsBatch() batch Supabase query, wipeMenuCacheIfNeeded() one-time cache flush, Playwright config + 24-test suite (24/24 passed). PR #44 merged.
 - ✅ Issue #10 — Macro-Meter: MacroMeter.tsx (React Native SVG) with full-circle calorie arc (Ketchup Red, % of daily goal, label uncapped), protein + fiber semicircle arcs (Electric Mint, FDA DV reference, fiber at 55% opacity), DV tooltips (hover web / tap mobile, column-aware anchor side), full missing-data states ("Calories unavailable", fixed-width "Not available" columns), profile daily_calorie_goal via shared TanStack Query cache. react-native-svg@15.12.1 installed. PR #42 merged.
 - ✅ Issue #37 — TanStack Query migration: profile.tsx, restaurant/[id].tsx, item/[id].tsx migrated to useQuery. nearbyChains.ts refactored to accept aliasMap + canonicalNames as params (eliminates 200+ parallel Supabase calls). nearby.tsx geo query on useQuery with locationStatus guard + 30min staleTime. nearby.tsx restaurant fetch reverted — Navigator Lock contention (Issue #39). PR #40 open
@@ -177,5 +179,5 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ---
 
-*Last updated: May 15 2026*
+*Last updated: May 18 2026*
 *Product owner: Mallory Comes*
