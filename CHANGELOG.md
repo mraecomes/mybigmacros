@@ -26,6 +26,36 @@
 
 ---
 
+## [May 18 2026] — Issue #38 — Browse Screen (searchable chain and menu item directory, no location required)
+
+### Added
+
+- `app/(tabs)/browse.tsx` — full Browse tab screen: category grid (distinct category values from `menu_items` via `get_categories` RPC, emoji per category), A-Z chain list, category item view with Prev/Next pagination at 20 items per page, global search with 300ms debounce (triggers at 3+ characters, split results showing matching chains and menu items in separate sections), category-scoped search, error states with plain-English messages, empty states, and "Calories unavailable" for null-calorie items. All colors from theme.ts, zero hardcoded values
+- `lib/supabase/browse.ts` — four query functions: `fetchCategories` (via `get_categories` RPC), `fetchAllChains` (via `get_chain_names` RPC), `fetchCategoryItems` (range-based pagination), `searchMenuItems` (ilike filter, paginated with Content-Range count). All throw with plain-English error messages
+- `supabase/migrations/20260518000000_create_get_categories_function.sql` — `get_categories()` RPC returning distinct category values from `menu_items`, consistent with the existing `get_chain_names` pattern
+- `tests/issue-38-browse-screen.spec.ts` — 37-test Playwright suite across 7 suites: default state (7), category view (6), pagination (4), global search (11), category search (3), chain navigation (2), error and layout states (4)
+- `tests/reports/issue-38-playwright-report/` — HTML report with 30 screenshots from the passing run
+- `tests/reports/issue-38-qa-report.md` — QA report documenting automated and manual test results
+
+### Deferred
+
+- **Package vulnerabilities (xlsx, brace-expansion, ws) — Issue #46** — `pnpm audit` run mid-session surfaced moderate vulnerabilities in three packages. `xlsx` and `brace-expansion` are Expo/Supabase transitive dependencies with no available patch yet; `ws` is similarly upstream-blocked. Deferred until Expo/Supabase release fixes. `xlsx` can also be removed from `package.json` directly since the MenuStat import script (Issue #3) is long complete and `xlsx` is no longer needed at runtime. Tracked as Issue #46
+
+### Decisions Made
+
+- **`get_categories` RPC for distinct category lookup** — mirrors the `get_chain_names` RPC pattern from Issue #4. PostgREST row limits make direct `select distinct` unreliable at scale; RPC bypasses the limit and keeps the pattern consistent
+- **Request counter instead of Range header for pagination test** — the Supabase JS client sends a `Range` header for `.range(from, to)` calls, but Playwright route handlers do not expose this header for browser Fetch requests via `headers()` or `allHeaders()`. A per-test request counter is used instead: request #1 (from beforeEach navigation) = page 1, request #2 (after clicking Next) = page 2
+- **`Access-Control-Expose-Headers: Content-Range` required in mocked Supabase responses** — `Content-Range` is a non-safe CORS header. Without explicit exposure in `route.fulfill()`, the Supabase JS client reads `count = null`, `totalCount = 0`, and pagination controls never render
+
+### QA Results
+
+- **Result:** PASSED
+- **Automated:** 37 passed, 0 failed
+- **Manual:** all scenarios passed
+- **Not tested:** real-data pagination (requires a production category with 20+ items in the DB), error states under real network throttle conditions
+
+---
+
 ## [May 15 2026] — Issue #11 — Calorie Filter Screen (budget input, accordion results, In Budget / Just Over Limit tabs)
 
 ### Added
