@@ -7,7 +7,7 @@ export default defineConfig({
   workers: 1,
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'tests/reports/issue-11-playwright-report', open: 'never' }],
+    ['html', { outputFolder: 'tests/reports/issue-38-playwright-report', open: 'never' }],
   ],
   use: {
     baseURL: 'http://localhost:8081',

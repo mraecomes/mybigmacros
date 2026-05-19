@@ -62,6 +62,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Core loop validated on Expo web (browser) | ⬜ Not started | |
 | Vercel deploy — live portfolio URL | ✅ Complete | mybigmacros.vercel.app — auto-deploys from main |
 | Data persistence (Supabase) | ⬜ Not started | |
+| Package vulnerabilities (xlsx, brace-expansion, ws) | ⬜ Not started | Issue #46 — defer until Expo/Supabase release patches; xlsx can be removed from package.json immediately. Added mid-session during Issue #38 |
 
 **Legend:** ⬜ Not started · 🔄 In progress · ✅ Complete · 🚫 Blocked
 
