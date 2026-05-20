@@ -26,6 +26,39 @@
 
 ---
 
+## [May 19 2026] — Issue #12 — Badge System (Protein Hit + Fiber Fuel badges)
+
+### Added
+
+- `lib/nutrition/badges.ts` — pure badge evaluation module. `evaluateBadges()` with strict null handling: null calories → both badges ineligible; null protein → Protein Hit ineligible; null fiber → Fiber Fuel ineligible. Protein Hit threshold: protein ≥ 20g AND calories < 500. Fiber Fuel threshold: fiber ≥ 5g AND calories < 500. `proteinTooltipText()` and `fiberTooltipText()` helpers return exact tooltip strings ("High protein (Xg) · Under 500 cal" / "Good fiber (Xg) · Under 500 cal"). No React imports — pure logic module
+- `components/nutrition/BadgeRow.tsx` — reusable badge row component used on all four MVP surfaces. Internal `BadgePill` manages its own tooltip visibility state. Tap-to-toggle on mobile (`Platform.OS !== 'web'`), hover on web (`onHoverIn`/`onHoverOut`). Tooltip anchored above each pill (`bottom: '100%'`, `marginBottom: 4`, `zIndex: 100`). Colors from `theme.ts`: `colors.badgeProtein` (#FFC107 Mustard Gold), `colors.badgeFiber` (#6B8F71 Muted Sage Green). Returns null when no badges qualify — no empty space rendered
+- `tests/issue-12-badge-system.spec.ts` — 29-test Playwright suite across 6 suites: Browse screen badge visibility (8), Browse screen badge colors (2), Browse screen tooltip on hover (4), Restaurant menu screen badge display (4), Item detail screen badge display (6), edge cases + threshold boundary values (5). Route mocking for Supabase API calls; `seedAuth` localStorage injection. Badge colors verified as computed RGB values. `fetchMenuItem` mock returns single JSON object (not array) to match `.single()` response shape
+- `tests/reports/issue-12-qa-report.md` — QA report: 29 automated tests passed, 1 manual passed (BudgetItemCard badge display in calorie filter results), 1 manual skipped (mobile tap-to-toggle — Expo Go incompatible with Mapbox native module)
+- `tests/reports/issue-12-playwright-report/` — HTML report with screenshots from the passing run
+
+### Changed
+
+- `app/item/[id].tsx` — replaced zero-height `badgesStub` View with `<BadgeRow item={item} />`. Removed `badgesStub: { height: 0 }` from StyleSheet
+- `components/restaurant/MenuItemRow.tsx` — added `<BadgeRow item={item} />` below the macro data row inside the `main` View. No stub existed; clean addition
+- `components/budget/BudgetItemCard.tsx` — removed fixed-width `badgeStub: { width: 52 }` right-column View. Added `<BadgeRow item={item} />` inside the `info` column below the calories Text. All cards now share the same `paddingHorizontal: spacing.lg` right edge regardless of badge presence — consistent spacing on badged and non-badged cards
+- `app/(tabs)/browse.tsx` — replaced empty stub `<View />` in `BrowseItemRow` with `<BadgeRow item={item} />`. `BrowseChainRow` is untouched — chain name rows never show badges
+- `playwright.config.ts` — HTML reporter `outputFolder` updated from `tests/reports/issue-38-playwright-report` to `tests/reports/issue-12-playwright-report`
+
+### Decisions Made
+
+- **Badges inside `info` column on BudgetItemCard rather than a right-column stub** — the original `badgeStub: { width: 52 }` was too narrow for one badge pill (~70-80px) and far too narrow for two. Moving badges inside `info` (flex: 1) eliminates right-column asymmetry and keeps all cards flush at the same `paddingHorizontal: spacing.lg` right edge regardless of badge presence
+- **`BadgeRow` as a single reusable component across all four surfaces** — badge rendering and tooltip logic are implemented once in `BadgeRow.tsx` via internal `BadgePill`. No surface duplicates badge logic. `evaluateBadges()` is a pure function testable in isolation from any React surface
+- **Tooltip pattern matches MacroMeter.tsx exactly** — `onPress` tap-to-toggle on non-web, `onHoverIn`/`onHoverOut` on web, `position: 'absolute'`, `bottom: '100%'`, `marginBottom: 4`, `zIndex: 100`. Consistent interaction model across all interactive nutrition indicators
+
+### QA Results
+
+- **Result:** PASSED
+- **Automated:** 29 passed, 0 failed
+- **Manual:** 1 passed (BudgetItemCard badge display in calorie filter results), 1 skipped (tooltip tap-to-toggle on mobile)
+- **Not tested:** Native mobile badge rendering and tooltip tap-to-toggle — Expo Go incompatible with `@rnmapbox/maps` native module; app cannot load past Nearby tab. Web tooltip validated via Playwright as sufficient for MVP. Native validation deferred until EAS Development Client build
+
+---
+
 ## [May 18 2026] — Issue #38 — Browse Screen (searchable chain and menu item directory, no location required)
 
 ### Added
