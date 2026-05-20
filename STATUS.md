@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #38 Complete
-**Last Updated:** May 18 2026
-**Last Session:** Issue #38 — Browse screen: built browse.tsx (category grid from get_categories RPC, A-Z chain list, category item view with Prev/Next pagination at 20 items/page, global search with 300ms debounce, category-scoped search, error/empty states), lib/supabase/browse.ts (fetchCategories, fetchAllChains, fetchCategoryItems, searchMenuItems), get_categories SQL migration, Playwright config + 37-test suite (37/37 passed). pnpm audit surfaced vulnerabilities in xlsx, brace-expansion, and ws — deferred to Issue #46. PR #47 merged to main.
-**Next Session Goal:** Issue #12 — Badge system (Protein Hit + Fiber Fuel)
+**Build Phase:** MVP — Issue #12 Complete
+**Last Updated:** May 19 2026
+**Last Session:** Issue #12 — Badge system: built lib/nutrition/badges.ts (evaluateBadges() pure function with strict null handling + tooltip string helpers), components/nutrition/BadgeRow.tsx (BadgePill with tap-to-toggle mobile / hover web tooltips, badge colors from theme.ts), wired BadgeRow onto all four surfaces (Browse, Restaurant menu, Item detail, Budget — BudgetItemCard layout refactored to move badges inside the info column for consistent spacing). 29-test Playwright suite (29/29 passed). PR #49 merged to main.
+**Next Session Goal:** Issue #13 — Chain logos (chains table, Brandfetch download script, logo wire-in across map pins, RestaurantCard, menu screen header)
 
 ---
 
@@ -52,9 +52,9 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Calorie filter — input + results screen | ✅ Complete | Optional budget input with profile pre-fill, In Budget / Just Over Limit toggle pills with live counts, accordion results (BudgetRestaurantSection) grouped by restaurant sorted by distance, items sorted by calories ascending |
 | Calorie filter — "Just over your limit" section | ✅ Complete | Items budget+1 to budget+100 shown in dimmed "Just Over Limit" tab; items >100 over budget excluded from both tabs |
 | Browse screen — searchable chain and menu item directory | ✅ Complete | Category grid + A-Z chain list default state, category item view with Prev/Next pagination at 20 items/page, global search (chains + items, 300ms debounce, 3+ char trigger), category-scoped search, missing data rules, error and empty states |
-| Badge system — Protein Hit | ⬜ Not started | ≥20g protein AND <500 cal, Mustard Gold |
-| Badge system — Fiber Fuel | ⬜ Not started | ≥5g fiber AND <500 cal, Muted Sage Green |
-| Badge tooltips (tap/hover) | ⬜ Not started | |
+| Badge system — Protein Hit | ✅ Complete | lib/nutrition/badges.ts + components/nutrition/BadgeRow.tsx. Protein Hit (≥20g protein AND <500 cal, Mustard Gold) on all four MVP surfaces: Browse, Restaurant menu, Item detail, Budget |
+| Badge system — Fiber Fuel | ✅ Complete | Fiber Fuel (≥5g fiber AND <500 cal, Muted Sage Green) on all four surfaces; both badges appear side by side when an item qualifies for both |
+| Badge tooltips (tap/hover) | ✅ Complete | Tap-to-toggle on mobile, hover on web. Tooltip anchored above each pill, showing exact qualifying values |
 | Menu item images — logo + emoji fallback | ⬜ Not started | Chain logos deferred; see Upcoming Decisions for Brandfetch plan |
 | Chain logos (Brandfetch + Supabase Storage + logo display) | ⬜ Not started | Issue #13 — chains table, primary_category fallback logic, download script, wire into map pins + RestaurantCard + menu screen header |
 | AsyncStorage caching (nutrition + location data) | ✅ Complete | Location results cached (24hr TTL, key = lat/lng/radius). Menu items cached (24hr TTL, key = chain name). Both show CachedDataBanner |
@@ -146,6 +146,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ## Recently Completed
 
+- ✅ Issue #12 — Badge system: lib/nutrition/badges.ts (evaluateBadges pure function + tooltip helpers), BadgeRow.tsx (Protein Hit + Fiber Fuel pills with tap/hover tooltips, colors from theme.ts), wired on all four MVP surfaces (Browse, Restaurant menu, Item detail, Budget). 29-test Playwright suite (29/29 passed). PR #49 merged.
 - ✅ Issue #38 — Browse screen: browse.tsx (category grid from get_categories RPC, A-Z chain list, category item view with Prev/Next pagination at 20 items/page, global search with 300ms debounce, category-scoped search, error/empty states), lib/supabase/browse.ts, get_categories SQL migration, 37-test Playwright suite (37/37 passed). PR #47 merged.
 - ✅ Issue #11 — Calorie filter screen: budget.tsx (calorie input, profile pre-fill, In Budget / Just Over Limit toggle tabs, accordion results via BudgetRestaurantSection + BudgetItemCard), fetchMenuItemsBatch() batch Supabase query, wipeMenuCacheIfNeeded() one-time cache flush, Playwright config + 24-test suite (24/24 passed). PR #44 merged.
 - ✅ Issue #10 — Macro-Meter: MacroMeter.tsx (React Native SVG) with full-circle calorie arc (Ketchup Red, % of daily goal, label uncapped), protein + fiber semicircle arcs (Electric Mint, FDA DV reference, fiber at 55% opacity), DV tooltips (hover web / tap mobile, column-aware anchor side), full missing-data states ("Calories unavailable", fixed-width "Not available" columns), profile daily_calorie_goal via shared TanStack Query cache. react-native-svg@15.12.1 installed. PR #42 merged.
@@ -179,5 +180,5 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ---
 
-*Last updated: May 18 2026*
+*Last updated: May 19 2026*
 *Product owner: Mallory Comes*
