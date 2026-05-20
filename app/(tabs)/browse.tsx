@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { BadgeRow } from '@/components/nutrition/BadgeRow';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import {
@@ -159,8 +160,7 @@ function BrowseItemRow({
         >
           {calorieLabel}
         </Text>
-        {/* Badge stubs — wired in Issue #12 */}
-        <View />
+        <BadgeRow item={item} />
       </View>
       <Text style={styles.chevron}>›</Text>
     </Pressable>

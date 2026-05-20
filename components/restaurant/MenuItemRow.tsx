@@ -1,3 +1,4 @@
+import { BadgeRow } from '@/components/nutrition/BadgeRow';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import type { MenuItem } from '@/types/menu';
 import { router } from 'expo-router';
@@ -52,6 +53,8 @@ export function MenuItemRow({ item }: Props) {
             {`P: ${formatMacro(item.protein_g, 'g')}  F: ${formatMacro(item.fat_g, 'g')}  C: ${formatMacro(item.carbs_g, 'g')}  Fi: ${formatMacro(item.fiber_g, 'g')}`}
           </Text>
         </View>
+
+        <BadgeRow item={item} />
       </View>
 
       <Text style={styles.chevron}>›</Text>
