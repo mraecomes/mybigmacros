@@ -1,3 +1,4 @@
+import { BadgeRow } from '@/components/nutrition/BadgeRow';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import type { MenuItem } from '@/types/menu';
 import { router } from 'expo-router';
@@ -53,10 +54,8 @@ export function BudgetItemCard({ item, chainName }: Props) {
           {item.item_name}
         </Text>
         <Text style={styles.calories}>{calorieLabel}</Text>
+        <BadgeRow item={item} />
       </View>
-
-      {/* Badge stub — reserved layout space (Issue #12) */}
-      <View style={styles.badgeStub} />
     </Pressable>
   );
 }
@@ -103,10 +102,5 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bodyBold,
     fontSize: typography.fontSize.sm,
     color: colors.primary,
-  },
-  badgeStub: {
-    // Reserved width for up to 2 badge pills — will be populated in Issue #12
-    width: 52,
-    flexShrink: 0,
   },
 });

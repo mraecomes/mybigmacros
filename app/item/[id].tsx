@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { BadgeRow } from '@/components/nutrition/BadgeRow';
 import { MacroMeter } from '@/components/nutrition/MacroMeter';
 import { NutritionLabel } from '@/components/nutrition/NutritionLabel';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
@@ -116,8 +117,7 @@ export default function ItemScreen() {
 
           <NutritionLabel item={item} />
 
-          {/* Badges — implemented in Issue #12 */}
-          <View style={styles.badgesStub} />
+          <BadgeRow item={item} />
         </ScrollView>
       )}
     </View>
@@ -216,8 +216,5 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
-  },
-  badgesStub: {
-    height: 0,
   },
 });
