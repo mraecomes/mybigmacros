@@ -8,10 +8,10 @@
 
 ## Current Status
 
-**Build Phase:** MVP — Issue #12 Complete
-**Last Updated:** May 19 2026
-**Last Session:** Issue #12 — Badge system: built lib/nutrition/badges.ts (evaluateBadges() pure function with strict null handling + tooltip string helpers), components/nutrition/BadgeRow.tsx (BadgePill with tap-to-toggle mobile / hover web tooltips, badge colors from theme.ts), wired BadgeRow onto all four surfaces (Browse, Restaurant menu, Item detail, Budget — BudgetItemCard layout refactored to move badges inside the info column for consistent spacing). 29-test Playwright suite (29/29 passed). PR #49 merged to main.
-**Next Session Goal:** Issue #13 — Chain logos (chains table, Brandfetch download script, logo wire-in across map pins, RestaurantCard, menu screen header)
+**Build Phase:** MVP — Issue #33 Complete
+**Last Updated:** May 25 2026
+**Last Session:** Issue #33 — Chain logos: chains table + RLS migration, chain-logos Supabase Storage bucket, download-chain-logos.js Brandfetch script (84/92 logos saved, 8 emoji fallback), constants/categoryEmoji.ts (12 MenuStat categories mapped), lib/supabase/chains.ts (fetchChainByName + fetchChainsBatch), lib/cache/chainsCache.ts (24hr AsyncStorage TTL), logo wire-in on RestaurantCard + restaurant menu header + PinPreviewCard, onLoad swap bug fixed on all surfaces (emoji and logo never simultaneously visible), initials-only map pins (logo on pins reverted due to DOM incompatibility). 18-test Playwright suite (18/18 passed) + 5 manual steps (5/5 passed). PR #51 merged.
+**Next Session Goal:** Issue #46 — Package vulnerabilities (xlsx removal + audit clean-up), then core loop validation on Expo web and Expo Go
 
 ---
 
@@ -55,8 +55,8 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 | Badge system — Protein Hit | ✅ Complete | lib/nutrition/badges.ts + components/nutrition/BadgeRow.tsx. Protein Hit (≥20g protein AND <500 cal, Mustard Gold) on all four MVP surfaces: Browse, Restaurant menu, Item detail, Budget |
 | Badge system — Fiber Fuel | ✅ Complete | Fiber Fuel (≥5g fiber AND <500 cal, Muted Sage Green) on all four surfaces; both badges appear side by side when an item qualifies for both |
 | Badge tooltips (tap/hover) | ✅ Complete | Tap-to-toggle on mobile, hover on web. Tooltip anchored above each pill, showing exact qualifying values |
-| Menu item images — logo + emoji fallback | ⬜ Not started | Chain logos deferred; see Upcoming Decisions for Brandfetch plan |
-| Chain logos (Brandfetch + Supabase Storage + logo display) | ⬜ Not started | Issue #13 — chains table, primary_category fallback logic, download script, wire into map pins + RestaurantCard + menu screen header |
+| Menu item images — logo + emoji fallback | ✅ Complete | Category emoji lookup (constants/categoryEmoji.ts, 12 MenuStat categories) + DEFAULT_EMOJI fallback on all surfaces |
+| Chain logos (Brandfetch + Supabase Storage + logo display) | ✅ Complete | chains table + chain-logos bucket, Brandfetch script (84/92 logos), logo wire-in on RestaurantCard + menu header + PinPreviewCard, onLoad swap fix, initials-only map pins |
 | AsyncStorage caching (nutrition + location data) | ✅ Complete | Location results cached (24hr TTL, key = lat/lng/radius). Menu items cached (24hr TTL, key = chain name). Both show CachedDataBanner |
 | "Using cached data" banner | ✅ Complete | CachedDataBanner.tsx shows "Showing saved results · Updated Xm ago" |
 | Core loop validated on Expo Go (mobile) | ⬜ Not started | |
@@ -146,6 +146,7 @@ These happen after project setup. Nothing in the MVP feature build starts until 
 
 ## Recently Completed
 
+- ✅ Issue #33 — Chain logos: chains table + download script (84/92 logos via Brandfetch), categoryEmoji.ts (12 category mappings), chains cache (24hr AsyncStorage), logo wire-in on RestaurantCard + restaurant menu header + PinPreviewCard, onLoad swap fix (emoji→logo never simultaneously visible), initials-only map pins. 18/18 Playwright + 5/5 manual passed. PR #51 merged.
 - ✅ Issue #12 — Badge system: lib/nutrition/badges.ts (evaluateBadges pure function + tooltip helpers), BadgeRow.tsx (Protein Hit + Fiber Fuel pills with tap/hover tooltips, colors from theme.ts), wired on all four MVP surfaces (Browse, Restaurant menu, Item detail, Budget). 29-test Playwright suite (29/29 passed). PR #49 merged.
 - ✅ Issue #38 — Browse screen: browse.tsx (category grid from get_categories RPC, A-Z chain list, category item view with Prev/Next pagination at 20 items/page, global search with 300ms debounce, category-scoped search, error/empty states), lib/supabase/browse.ts, get_categories SQL migration, 37-test Playwright suite (37/37 passed). PR #47 merged.
 - ✅ Issue #11 — Calorie filter screen: budget.tsx (calorie input, profile pre-fill, In Budget / Just Over Limit toggle tabs, accordion results via BudgetRestaurantSection + BudgetItemCard), fetchMenuItemsBatch() batch Supabase query, wipeMenuCacheIfNeeded() one-time cache flush, Playwright config + 24-test suite (24/24 passed). PR #44 merged.
