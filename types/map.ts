@@ -6,6 +6,8 @@ export type MapPin = {
   canonicalName?: string;
   distanceMiles?: number;
   address?: string;
+  logo_url?: string | null;
+  primary_category?: string | null;
 };
 
 export type MapViewProps = {
