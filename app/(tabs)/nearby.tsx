@@ -4,10 +4,12 @@ import { RadiusSelector } from '@/components/nearby/RadiusSelector';
 import { RestaurantCard } from '@/components/restaurant/RestaurantCard';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
 import { colors, radii, spacing, typography } from '@/constants/theme';
+import { getCachedChainsBatch, setCachedChainsBatch } from '@/lib/cache/chainsCache';
 import { getCachedResults, setCachedResults } from '@/lib/cache/locationCache';
 import { setLastSearchParams } from '@/lib/cache/lastSearchParams';
 import { fetchNearbyChains } from '@/lib/overpass/nearbyChains';
 import { supabase } from '@/lib/supabase/client';
+import { fetchChainsBatch, type ChainData } from '@/lib/supabase/chains';
 import type { MapPin } from '@/types/map';
 import type { LocationCoords, RestaurantResult } from '@/types/restaurant';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -32,6 +34,35 @@ type ViewMode = 'map' | 'list';
 type LocationStatus = 'requesting' | 'granted' | 'denied' | 'manual';
 
 const BREAKPOINT = 768;
+
+/**
+ * Fetch logo_url + primary_category for a set of restaurant results.
+ * Checks the per-chain AsyncStorage cache first; only hits Supabase for misses.
+ * Chain data is non-critical — failures are swallowed; emoji fallbacks still render.
+ */
+async function fetchChainDataForResults(
+  results: RestaurantResult[]
+): Promise<Map<string, ChainData>> {
+  const uniqueNames = [...new Set(results.map((r) => r.canonicalName))];
+  if (uniqueNames.length === 0) return new Map();
+
+  const { cached, missing } = await getCachedChainsBatch(uniqueNames);
+  const chainMap = new Map(cached);
+
+  if (missing.length > 0) {
+    try {
+      const fetched = await fetchChainsBatch(missing);
+      for (const chain of fetched) {
+        chainMap.set(chain.chain_name, chain);
+      }
+      await setCachedChainsBatch(fetched);
+    } catch {
+      // Non-critical — emoji fallbacks render for any chains without data
+    }
+  }
+
+  return chainMap;
+}
 
 async function geocodeQuery(
   query: string
@@ -81,6 +112,7 @@ export default function NearbyScreen() {
 
   const [radiusMiles, setRadiusMiles] = useState<RadiusOption>(5);
   const [restaurants, setRestaurants] = useState<RestaurantResult[]>([]);
+  const [chainDataMap, setChainDataMap] = useState<Map<string, ChainData>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cachedAt, setCachedAt] = useState<number | null>(null);
@@ -156,6 +188,8 @@ export default function NearbyScreen() {
     try {
       const cached = await getCachedResults(lat, lng, radius);
       if (cached) {
+        const chainMap = await fetchChainDataForResults(cached.results);
+        setChainDataMap(chainMap);
         setRestaurants(cached.results);
         setCachedAt(cached.fetchedAt);
         setLoading(false);
@@ -176,6 +210,8 @@ export default function NearbyScreen() {
 
       setCachedAt(null);
       const results = await fetchNearbyChains(c, radius, aliasMap, canonicalNames);
+      const chainMap = await fetchChainDataForResults(results);
+      setChainDataMap(chainMap);
       setRestaurants(results);
       await setCachedResults(lat, lng, radius, results);
       void setLastSearchParams({ lat, lng, radiusMiles: radius });
@@ -247,15 +283,20 @@ export default function NearbyScreen() {
     router.push(`/restaurant/${encodeURIComponent(restaurant.canonicalName)}`);
   }
 
-  const mapPins: MapPin[] = restaurants.map((r) => ({
-    id: String(r.osmId),
-    latitude: r.latitude,
-    longitude: r.longitude,
-    label: r.canonicalName,
-    canonicalName: r.canonicalName,
-    distanceMiles: r.distanceMiles,
-    address: r.address,
-  }));
+  const mapPins: MapPin[] = restaurants.map((r) => {
+    const chainData = chainDataMap.get(r.canonicalName);
+    return {
+      id: String(r.osmId),
+      latitude: r.latitude,
+      longitude: r.longitude,
+      label: r.canonicalName,
+      canonicalName: r.canonicalName,
+      distanceMiles: r.distanceMiles,
+      address: r.address,
+      logo_url: chainData?.logo_url ?? null,
+      primary_category: chainData?.primary_category ?? null,
+    };
+  });
 
   const mapCenter = coords ?? { latitude: 37.7749, longitude: -122.4194 };
 
@@ -451,14 +492,19 @@ export default function NearbyScreen() {
       <FlatList
         data={restaurants}
         keyExtractor={(r) => String(r.osmId)}
-        renderItem={({ item }) => (
-          <RestaurantCard
-            canonicalName={item.canonicalName}
-            displayName={item.displayName}
-            distanceMiles={item.distanceMiles}
-            address={item.address}
-          />
-        )}
+        renderItem={({ item }) => {
+          const chainData = chainDataMap.get(item.canonicalName);
+          return (
+            <RestaurantCard
+              canonicalName={item.canonicalName}
+              displayName={item.displayName}
+              distanceMiles={item.distanceMiles}
+              address={item.address}
+              logo_url={chainData?.logo_url ?? null}
+              primary_category={chainData?.primary_category ?? null}
+            />
+          );
+        }}
         showsVerticalScrollIndicator={false}
       />
     );

@@ -2,14 +2,17 @@ import { useQuery } from '@tanstack/react-query';
 import { CachedDataBanner } from '@/components/nearby/CachedDataBanner';
 import { MenuItemRow } from '@/components/restaurant/MenuItemRow';
 import { SkeletonLoader } from '@/components/ui/SkeletonLoader';
+import { CATEGORY_EMOJI, DEFAULT_EMOJI } from '@/constants/categoryEmoji';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { getCachedMenuItems, setCachedMenuItems } from '@/lib/cache/menuCache';
 import { fetchMenuItems } from '@/lib/supabase/menuItems';
+import { fetchChainByName } from '@/lib/supabase/chains';
 import type { MenuItem } from '@/types/menu';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, useLocalSearchParams } from 'expo-router';
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
+  Image,
   Platform,
   Pressable,
   SectionList,
@@ -99,6 +102,13 @@ export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const chainName = decodeURIComponent(id ?? '');
 
+  const chainQuery = useQuery({
+    queryKey: ['chain', chainName],
+    queryFn: () => fetchChainByName(chainName),
+    enabled: !!chainName,
+    staleTime: Infinity,
+  });
+
   const {
     isLoading,
     isError,
@@ -123,6 +133,13 @@ export default function RestaurantScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [logoImgError, setLogoImgError] = useState(false);
+  const [logoImgLoaded, setLogoImgLoaded] = useState(false);
+
+  const chainData = chainQuery.data ?? null;
+  const showLogo = !!chainData?.logo_url && !logoImgError;
+  const displayLogo = showLogo && logoImgLoaded;
+  const logoEmoji = CATEGORY_EMOJI[chainData?.primary_category ?? ''] ?? DEFAULT_EMOJI;
 
   const sections = useMemo(
     () => buildSections(items, searchQuery),
@@ -241,6 +258,19 @@ export default function RestaurantScreen() {
           <Text style={styles.backText}>Back</Text>
         </Pressable>
 
+        <View style={styles.headerLogoCircle}>
+          {!displayLogo && <Text style={styles.headerLogoEmoji}>{logoEmoji}</Text>}
+          {showLogo && (
+            <Image
+              source={{ uri: chainData!.logo_url! }}
+              style={displayLogo ? styles.headerLogoImage : styles.headerLogoImageHidden}
+              resizeMode="contain"
+              onLoad={() => setLogoImgLoaded(true)}
+              onError={() => setLogoImgError(true)}
+            />
+          )}
+        </View>
+
         <View style={styles.headerCenter}>
           <Text style={styles.chainName} numberOfLines={1}>
             {chainName}
@@ -291,6 +321,34 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
+  },
+  headerLogoCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    overflow: 'hidden',
+  },
+  headerLogoEmoji: {
+    fontSize: 18,
+    lineHeight: 36,
+    textAlign: 'center',
+  },
+  headerLogoImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  headerLogoImageHidden: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
   },
   headerCenter: {
     flex: 1,

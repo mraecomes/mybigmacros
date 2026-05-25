@@ -4,6 +4,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { router } from 'expo-router';
 import type { MapViewProps, MapPin } from '@/types/map';
 
+type LogoState = 'loading' | 'loaded' | 'error';
+
 const MILES_TO_METERS = 1609.344;
 
 /** Generate a GeoJSON polygon approximating a circle (for the radius ring) */
@@ -28,15 +30,22 @@ function circlePolygon(
   };
 }
 
-/** Create the HTML element used as a Mapbox GL marker for a restaurant pin */
+function pinInitials(label: string): string {
+  return (
+    label
+      .replace(/[^a-zA-Z\s]/g, '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join('') || label.slice(0, 2).toUpperCase()
+  );
+}
+
+/** Create the HTML element used as a Mapbox GL marker for a restaurant pin.
+ *  Always shows initials — reliable across all chains. */
 function createPinElement(label: string): HTMLElement {
-  const initials = label
-    .replace(/[^a-zA-Z\s]/g, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('') || label.slice(0, 2).toUpperCase();
+  const initials = pinInitials(label);
 
   const el = document.createElement('div');
   Object.assign(el.style, {
@@ -58,6 +67,7 @@ function createPinElement(label: string): HTMLElement {
     flexShrink: '0',
   });
   el.textContent = initials;
+
   return el;
 }
 
@@ -283,6 +293,9 @@ function PinPreviewCard({
   onBrowseMenu,
   onDismiss,
 }: PinPreviewCardProps) {
+  const [logoState, setLogoState] = useState<LogoState>('loading');
+  const initials = pinInitials(pin.label);
+
   const pos = computeCardPosition(pinCenterX, pinTopY, containerWidth, containerHeight);
 
   const containerStyle: React.CSSProperties = {
@@ -303,20 +316,73 @@ function PinPreviewCard({
 
   const distance = formatDistance(pin.distanceMiles);
 
+  const logoCircleStyle: React.CSSProperties = {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    backgroundColor: '#C41E3A',
+    border: '1.5px solid rgba(255,255,255,0.2)',
+    flexShrink: 0,
+    overflow: 'hidden',
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '10px',
+    fontWeight: '700',
+    color: '#ffffff',
+  };
+
   return (
     <div style={containerStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, color: '#ffffff', lineHeight: 1.3 }}>
-          {pin.label}
-        </span>
+      {/* Header row: logo + name + close button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+          {/* Logo circle — initials while loading, image on load, initials on error */}
+          <div style={logoCircleStyle}>
+            {logoState !== 'loaded' && <span>{initials}</span>}
+            {pin.logo_url && logoState !== 'error' && (
+              <img
+                src={pin.logo_url}
+                onLoad={() => setLogoState('loaded')}
+                onError={() => setLogoState('error')}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  borderRadius: '50%',
+                  display: logoState === 'loaded' ? 'block' : 'none',
+                }}
+                alt=""
+              />
+            )}
+          </div>
+          <span style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 14,
+            fontWeight: 600,
+            color: '#ffffff',
+            lineHeight: 1.3,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {pin.label}
+          </span>
+        </div>
         <button
           onClick={onDismiss}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0A0A0', padding: '0 0 0 8px', fontSize: 16, lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A0A0A0', padding: '0 0 0 8px', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
           aria-label="Close preview"
         >
           ×
         </button>
       </div>
+
       {distance && (
         <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#C41E3A', fontWeight: 600 }}>
           {distance}
