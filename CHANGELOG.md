@@ -26,6 +26,51 @@
 
 ---
 
+## [May 25 2026] — Issue #33 — Chain Logos (Brandfetch download + Supabase Storage + logo display)
+
+### Added
+
+- `supabase/migrations/20260521000000_create_chains_table.sql` — `chains` table with `chain_name` (unique, no FK to `menu_items`), `logo_url`, `primary_category`, and public RLS read policy
+- `supabase/migrations/20260521000001_chain_logos_storage_policy.sql` — public read policy for `storage.objects` scoped to the `chain-logos` bucket
+- `scripts/download-chain-logos.js` — one-time Brandfetch download script: paginates `menu_items` in 1,000-row pages, derives candidate domains per chain (splits on `/` for dual-brand names), fetches PNG logos (skips SVG/WebP), uploads to `chain-logos` Supabase Storage bucket, upserts every chain into `chains` with `logo_url` and `primary_category`. Rate-limit retry with exponential backoff (2s → 4s → 8s, max 3 retries). Result: 84/92 chains with logos, 8 using emoji fallback
+- `constants/categoryEmoji.ts` — `CATEGORY_EMOJI` lookup keyed on all 12 exact MenuStat `category` values confirmed via `SELECT DISTINCT category FROM menu_items`; `DEFAULT_EMOJI = '🍔'` for null or unmapped categories
+- `lib/supabase/chains.ts` — `fetchChainByName()` (single-row, returns null on PGRST116) and `fetchChainsBatch()` (`.in()` batch query); both typed with `ChainData`
+- `lib/cache/chainsCache.ts` — AsyncStorage chain data cache: `getCachedChainsBatch()` returns `{ cached, missing }` split; `setCachedChainsBatch()` writes per-chain keys with 24hr TTL (`chain_` prefix). Best-effort — storage failures never throw
+- `tests/issue-33-chain-logos.spec.ts` — 18-test Playwright suite across 5 suites: smoke tests (3), restaurant header logo display (3), restaurant header emoji fallback (5), `categoryEmoji.ts` static coverage (3), edge cases (4). Minimal 1×1 PNG served for Storage URL mocks so `onLoad` fires reliably
+- `tests/reports/issue-33-qa-report.md` — QA report: 18 automated + 5 manual, all passed
+- `tests/reports/issue-33-playwright-report/` — HTML report with 9 screenshots from the passing run
+
+### Changed
+
+- `app/(tabs)/nearby.tsx` — added `fetchChainDataForResults()` module-level helper that batch-fetches chain data (cache-first, AsyncStorage 24hr TTL); called for both cached and fresh Overpass result paths; result stored in `chainDataMap` state and passed as `logo_url` + `primary_category` to both `mapPins` and `FlatList` `RestaurantCard` renders
+- `components/restaurant/RestaurantCard.tsx` — added `logo_url` and `primary_category` props; logo circle shows category emoji from `CATEGORY_EMOJI` or `DEFAULT_EMOJI`; `<Image>` preloads hidden via `logoImageHidden` style (1×1, opacity 0) until `onLoad` fires, then swaps to full-size `logoImage` style — emoji unmounts when `displayLogo` is true, ensuring the two are never simultaneously visible
+- `app/restaurant/[id].tsx` — added `chainQuery` (`useQuery`, `staleTime: Infinity`) fetching `fetchChainByName(chainName)`; same `imgLoaded`/`displayLogo` pattern as `RestaurantCard`; `resizeMode="contain"` on all `<Image>` instances
+- `components/map/MapView.web.tsx` — `createPinElement` reverted to initials-only (no logo img child); `PinPreviewCard` retains React state-driven logo display (`logoState: 'loading' | 'loaded' | 'error'`) which was unaffected by the DOM bug; `LogoState` type retained for `PinPreviewCard`
+- `types/map.ts` — `logo_url?: string | null` and `primary_category?: string | null` added to `MapPin` type
+- `.env.example` — `BRANDFETCH_API_KEY=` placeholder added
+- `playwright.config.ts` — HTML reporter `outputFolder` updated to `tests/reports/issue-33-playwright-report`
+
+### Fixed
+
+- **Emoji rendered on top of loaded logos (RestaurantCard + menu screen header)** — both surfaces rendered the category emoji `<Text>` unconditionally and placed the logo `<Image>` absolutely on top with no `onLoad` tracking. Added `imgLoaded`/`logoImgLoaded` boolean state; `displayLogo = showLogo && imgLoaded`. Emoji only mounts when `!displayLogo`; image uses `logoImageHidden` style (1×1, opacity 0) until `onLoad` flips `displayLogo` to true, at which point it switches to the full-size visible style. Emoji and logo are never simultaneously visible
+- **Map pins lost initials after logo wire-in (plain red circles)** — `createPinElement` appended a logo `<img>` child then called `el.textContent = ''` inside `img.onload`. Assigning `textContent` replaces all child nodes including the just-appended img, leaving an empty red circle. Reverted `createPinElement` to initials-only — no img child, no DOM manipulation on load
+
+### Decisions Made
+
+- **Map pins use initials only — logo display on pins deferred** — the DOM imperative pattern (append img, clear textContent on load) is incompatible with how Mapbox GL JS marker elements work. Initials circles are reliable across all 92 chains. Logo display on map pins is a future improvement when a non-destructive approach is confirmed
+- **`primary_category` computed by download script, not at query time** — map pins and RestaurantCards operate at chain level with no item data in scope. `computePrimaryCategories()` calculates the most frequent `category` per chain from all `menu_items` rows and stores it as a single `chains.primary_category` column — emoji fallback reads one column with no join
+- **Chain data cached in AsyncStorage at 24hr TTL** — matches the existing TTL for menu items and Overpass results; keeps all three caching layers consistent
+- **8 chains permanently on emoji fallback** — Brandfetch returned no usable PNG for BJ's Restaurant & Brewhouse, California Pizza Kitchen, Carrabba's Italian Grill, Casey's General Store, Cheddar's Casual Café / Cheddar's Scratch Kitchen, Dickey's Barbeque, and 2 others. These chains render the category emoji. No action needed
+
+### QA Results
+
+- **Result:** PASSED
+- **Automated:** 18 passed, 0 failed
+- **Manual:** 5 passed, 0 failed (RestaurantCard logos in list view, map pin initials, logo async swap, onError fallback, AsyncStorage cache persistence)
+- **Not tested:** Native Expo Go logo/emoji rendering; `MapView.native.tsx` surface — web-only scope for this issue; EAS Development Client build required for native validation
+
+---
+
 ## [May 19 2026] — Issue #12 — Badge System (Protein Hit + Fiber Fuel badges)
 
 ### Added
